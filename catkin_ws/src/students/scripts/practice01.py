@@ -1,50 +1,64 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2023-2
-# PRACTICE 01 - THE PLATFORM ROS 
+# PRACTICE 01 - MAPS 
 #
 # Instructions:
-# Write a program to move the robot forwards until the laser
-# detects an obstacle in front of it.
-# Required publishers and subscribers are already declared and initialized.
+# Complete the code necessary to inflate the obstacles given an occupancy grid map and
+# a number of cells to inflate. 
 #
 
 import rospy
-from sensor_msgs.msg   import LaserScan
-from geometry_msgs.msg import Twist
+import numpy
+from nav_msgs.msg import OccupancyGrid
+from nav_msgs.srv import GetMap
+from nav_msgs.srv import GetMapResponse
+from nav_msgs.srv import GetMapRequest
 
-NAME = "MARCO NEGRETE"
+NAME = "FULL_NAME"
 
-def callback_scan(msg):
-    global obstacle_detected
+def get_inflated_map(static_map, inflation_cells):
+    print("Inflating map by " + str(inflation_cells) + " cells")
+    inflated = numpy.copy(static_map)
+    [height, width] = static_map.shape
     #
     # TODO:
-    # Do something to detect if there is an obstacle in front of the robot.
-    # Set the 'obstacle_detected' variable with True or False, accordingly.
+    # Write the code necessary to inflate the obstacles in the map a radius
+    # given by 'inflation_cells' (expressed in number of cells)
+    # Map is given in 'static_map' as a bidimensional numpy array.
+    # Consider as occupied cells all cells with an occupation value greater than 50
     #
     
-    return
+    return inflated
+
+def callback_inflated_map(req):
+    global inflated_map
+    return GetMapResponse(map=inflated_map)
 
 def main():
+    global cost_map, inflated_map
     print("PRACTICE 01 - " + NAME)
     rospy.init_node("practice01")
-    rospy.Subscriber("/hardware/scan", LaserScan, callback_scan)
-    pub_cmd_vel = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
-    loop = rospy.Rate(10)
+    rospy.wait_for_service('/static_map')
+    pub_map  = rospy.Publisher("/inflated_map", OccupancyGrid, queue_size=10)
+    grid_map = rospy.ServiceProxy("/static_map", GetMap)().map
+    map_info = grid_map.info
+    width, height, res = map_info.width, map_info.height, map_info.resolution
+    grid_map = numpy.reshape(numpy.asarray(grid_map.data, dtype='int'), (height, width))
+    rospy.Service('/inflated_map', GetMap, callback_inflated_map)
+    loop = rospy.Rate(2)
     
-    global obstacle_detected
-    obstacle_detected = False
+    inflation_radius = 0.1
     while not rospy.is_shutdown():
-        #
-        # TODO:
-        # Declare a Twist message and assign the appropiate speeds:
-        # Move forward if there is no obstacle in front of the robot, and stop otherwise.
-        # Use the 'obstacle_detected' variable to check if there is an obstacle. 
-        # Publish the Twist message using the already declared publisher 'pub_cmd_vel'.
-        #
-        
+        if rospy.has_param("/path_planning/inflation_radius"):
+            new_inflation_radius = rospy.get_param("/path_planning/inflation_radius")
+        if new_inflation_radius != inflation_radius:
+            inflation_radius  = new_inflation_radius
+            inflated_map_data = get_inflated_map(grid_map, int(inflation_radius/res))
+            inflated_map_data = numpy.ravel(numpy.reshape(inflated_map_data, (width*height, 1)))
+            inflated_map      = OccupancyGrid(info=map_info, data=inflated_map_data)
+        pub_map.publish(callback_inflated_map(GetMapRequest()).map)
         loop.sleep()
-
 
 if __name__ == '__main__':
     try:
