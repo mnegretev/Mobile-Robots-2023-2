@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2023-2
-<<<<<<< HEAD
-# ASSIGNMENT 03 - THE PLATFORM ROS 
-=======
 # ASSIGNMENT 03 - THE PLATFORM ROS
->>>>>>> e6c5091f98b1d8f53fec984f5445bfc60254fda3
 #
 # Instructions:
 # Write a program to move the robot forwards until the laser
