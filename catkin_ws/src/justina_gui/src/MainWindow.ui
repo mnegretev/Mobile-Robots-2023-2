@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ui version="4.0">
+<ui version="4.0">go
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Mobile Robots - FI-UNAM - 2023-2</string>
+   <string>Mobile Robots - FI-UNAM - 2023-2 - Aguilera Valderrama Alexis Fernando</string>
   </property>
   <property name="styleSheet">
    <string notr="true">QGroupBox {
