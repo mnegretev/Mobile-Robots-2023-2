@@ -23,7 +23,7 @@ NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
 msg_path = Path()
 
 def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map):
-    #
+   
     # TODO:
     # Review the A* algorithm to find a path in an occupancy grid map given the start cell
     # [start_r, start_c], the goal cell [goal_r, goal_c] and the map 'grid_map'.
@@ -42,7 +42,7 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map):
     #
     adjacent_idx   = [[1,0],[0,1],[-1,0],[0,-1]]
     #adjacent_idx      = [[1,0],[0,1],[-1,0],[0,-1], [1,1], [-1,1], [-1,-1],[1,-1]]
-    #
+    
 
     open_list = [] 
     heapq.heappush(open_list, (0, [start_r, start_c]))
