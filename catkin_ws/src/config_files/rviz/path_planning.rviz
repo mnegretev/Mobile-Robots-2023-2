@@ -24,7 +24,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: Image
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -456,9 +456,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6647971868515015
+      Pitch: 0.5097973346710205
       Target Frame: <Fixed Frame>
-      Yaw: 4.943571090698242
+      Yaw: 4.993577003479004
     Saved: ~
 Window Geometry:
   Displays:
@@ -478,5 +478,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1528
-  X: 72
-  Y: 327
+  X: -259
+  Y: 27
