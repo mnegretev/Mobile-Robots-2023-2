@@ -1,181 +1,180 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - UNAM, FI, 2023-2
-# PRACTICE 10 - TRAINING A NEURAL NETWORK
+# PRACTICE 10 - INVERSE KINEMATICS
 #
 # Instructions:
-# Complete the code to train a neural network for
-# handwritten digits recognition.
+# Calculate the inverse kinematics for both manipulators (left and right) given the
+# URDF descriptions and a desired configuration. Solve the inverse kinematics using
+# the Newton-Raphson method for root finding.
+# Modify only sections marked with the 'TODO' comment
 #
-import cv2
-import sys
-import random
-import numpy
+
+import math
 import rospy
-import rospkg
+import tf
+import tf.transformations as tft
+import numpy
+import urdf_parser_py.urdf
+from geometry_msgs.msg import PointStamped
+from custom_msgs.srv import *
 
 NAME = "FULL_NAME"
 
-class NeuralNetwork(object):
-    def __init__(self, layers, weights=None, biases=None):
-        #
-        # The list 'layers' indicates the number of neurons in each layer.
-        # Remember that the first layer indicates the dimension of the inputs and thus,
-        # there is no bias vector fot the first layer.
-        # For this practice, 'layers' should be something like [784, n2, n3, ..., nl, 10]
-        # All weights and biases are initialized with random values. In each layer we have a matrix
-        # of weights where row j contains all the weights of the j-th neuron in that layer. For this example,
-        # the first matrix should be of order n2 x 784 and last matrix should be 10 x nl.
-        #
-        self.num_layers  = len(layers)
-        self.layer_sizes = layers
-        self.biases =[numpy.random.randn(y,1) for y in layers[1:]] if biases is None else biases
-        self.weights=[numpy.random.randn(y,x) for x,y in list(zip(layers[:-1],layers[1:]))] if weights is None else weights
-        self.weights = numpy.array(self.weights, dtype=object)
-        self.biases  = numpy.array(self.biases , dtype=object)
-        
-    def feedforward(self, x):
-        #
-        # This function gets the output of the network when input is 'x'.
-        #
-        for i in range(len(self.biases)):
-            z = numpy.dot(self.weights[i], x) + self.biases[i]
-            x = 1.0 / (1.0 + numpy.exp(-z))  #output of the current layer is the input of the next one
-        return x
-
-    def feedforward_verbose(self, x):
-        #
-        # TODO:
-        # Write a function similar to 'feedforward' but instead of returning only the output layer,
-        # return a list containing the output of each layer, from input to output.
-        # Include input x as the first output.
-        #
-        y = []
-        return y
-
-    def backpropagate(self, x, yt):
-        y = self.feedforward_verbose(x)
-        nabla_b = [numpy.zeros(b.shape) for b in self.biases]
-        nabla_w = [numpy.zeros(w.shape) for w in self.weights]
-        # TODO:
-        # Return a tuple [nabla_w, nabla_b] containing the gradient of cost function C with respect to
-        # each weight and bias of all the network. The gradient is calculated assuming only one training
-        # example is given: the input 'x' and the corresponding label 'yt'.
-        # nabla_w and nabla_b should have the same dimensions as the corresponding
-        # self.weights and self.biases
-        # You can calculate the gradient following these steps:
-        #
-        # Calculate delta for the output layer L: delta=(yL-yt)*yL*(1-yL)
-        # nabla_b of output layer = delta      
-        # nabla_w of output layer = delta*yLpT where yLpT is the transpose of the ouput vector of layer L-1
-        # FOR all layers 'l' from L-1 to input layer: 
-        #     delta = (WT * delta)*yl*(1 - yl)
-        #     where 'WT' is the transpose of the matrix of weights of layer l+1 and 'yl' is the output of layer l
-        #     nabla_b[-l] = delta
-        #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
-        #
-
-        return nabla_w, nabla_b
-
-    def update_with_batch(self, batch, eta):
-        #
-        # This function exectutes gradient descend for the subset of examples
-        # given by 'batch' with learning rate 'eta'
-        # 'batch' is a list of training examples [(x,y), ..., (x,y)]
-        #
-        nabla_b = [numpy.zeros(b.shape) for b in self.biases]
-        nabla_w = [numpy.zeros(w.shape) for w in self.weights]
-        M = len(batch)
-        for x,y in batch:
-            if rospy.is_shutdown():
-                break
-            delta_nabla_w, delta_nabla_b = self.backpropagate(x,y)
-            nabla_w = [nw+dnw for nw,dnw in zip(nabla_w, delta_nabla_w)]
-            nabla_b = [nb+dnb for nb,dnb in zip(nabla_b, delta_nabla_b)]
-        self.weights = [w-eta*nw/M for w,nw in zip(self.weights, nabla_w)]
-        self.biases  = [b-eta*nb/M for b,nb in zip(self.biases , nabla_b)]
-        self.weights = numpy.array(self.weights, dtype=object)
-        self.biases  = numpy.array(self.biases , dtype=object)
-        return nabla_w, nabla_b
-
-    def get_gradient_mag(self, nabla_w, nabla_b):
-        mag_w = sum([numpy.sum(n) for n in [nw*nw for nw in nabla_w]])
-        mag_b = sum([numpy.sum(b) for b in [nb*nb for nb in nabla_b]])
-        return mag_w + mag_b
-
-    def train_by_SGD(self, training_data, epochs, batch_size, eta):
-        for j in range(epochs):
-            random.shuffle(training_data)
-            batches = [training_data[k:k+batch_size] for k in range(0,len(training_data), batch_size)]
-            for batch in batches:
-                if rospy.is_shutdown():
-                    return
-                nabla_w, nabla_b = self.update_with_batch(batch, eta)
-                sys.stdout.write("\rGradient magnitude: %f            " % (self.get_gradient_mag(nabla_w, nabla_b)))
-                sys.stdout.flush()
-            print("Epoch: " + str(j))
+def get_model_info():
+    global joints, transforms
+    robot_model = urdf_parser_py.urdf.URDF.from_parameter_server()
+    joints = {'left': [None for i in range(8)], 'right': [None for i in range(8)]}
+    transforms = {'left':[], 'right':[]}
+    for joint in robot_model.joints:
+        for i in range(1,8):
+            joints['left' ][i-1] = joint if joint.name == ('la_'+str(i)+'_joint') else joints['left' ][i-1]
+            joints['right'][i-1] = joint if joint.name == ('ra_'+str(i)+'_joint') else joints['right'][i-1]
+        joints['left' ][7] = joint if joint.name == 'la_grip_center_joint' else joints['left' ][7]
+        joints['right'][7] = joint if joint.name == 'ra_grip_center_joint' else joints['right'][7]
+    for joint in joints['left']:
+        T = tft.translation_matrix(joint.origin.xyz)
+        R = tft.euler_matrix(joint.origin.rpy[0], joint.origin.rpy[1], joint.origin.rpy[2])
+        transforms['left'].append(tft.concatenate_matrices(T,R))
+    for joint in joints['right']:
+        T = tft.translation_matrix(joint.origin.xyz)
+        R = tft.euler_matrix(joint.origin.rpy[0], joint.origin.rpy[1], joint.origin.rpy[2])
+        transforms['right'].append(tft.concatenate_matrices(T,R))
+    
+def forward_kinematics(q, Ti, Wi):
     #
-    ### END OF CLASS
+    # TODO:
+    # Calculate the forward kinematics given the set of seven angles 'q'
+    # You can use the following steps:
+    #     H = I   # Assing to H a 4x4 identity matrix
+    #     for all qi in q:
+    #         H = H * Ti * Ri
+    #     H = H * Ti[7]
+    #     Get xyzRPY from the resulting Homogeneous Transformation 'H'
+    # Where:
+    #     Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
+    #     Ri are the Homogeneous Transformations with zero-translation and rotation qi around axis Wi.
+    #     Ti[7] is the final Homogeneous Transformation from gripper center to joint 7.
+    # Hints:
+    #     Use the tft.identity_matrix() function to get the 4x4 I
+    #     Use the tft.concatenate_matrices() function for multiplying Homogeneous Transformations
+    #     Use the tft.rotation_matrix() matrices Ri.
+    #     Use the tft.euler_from_matrix() function to get RPY from matrix H
+    #     Check online documentation of these functions:
+    #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
+    x,y,z,R,P,Y = 0,0,0,0,0,0
+    return numpy.asarray([x,y,z,R,P,Y])
 
+def jacobian(q, Ti, Wi):
+    delta_q = 0.000001
+    #
+    # TODO:
+    # Calculate the Jacobian given a kinematic description Ti and Wi
+    # where:
+    # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
+    # Wi are the axis of rotation of i-th joint
+    # Use the numeric approximation:   f'(x) = (f(x+delta) - f(x-delta))/(2*delta)
+    #
+    # You can do the following steps:
+    #     J = matrix of 6x7 full of zeros
+    #     q_next = [q1+delta       q2        q3   ....     q7
+    #                  q1       q2+delta     q3   ....     q7
+    #                              ....
+    #                  q1          q2        q3   ....   q7+delta]
+    #     q_prev = [q1-delta       q2        q3   ....     q7
+    #                  q1       q2-delta     q3   ....     q7
+    #                              ....
+    #                  q1          q2        q3   ....   q7-delta]
+    #     FOR i = 1,..,7:
+    #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
+    #     RETURN J
+    #     
+    J = numpy.asarray([[0.0 for a in q] for i in range(6)])            # J 6x7 full of zeros
+    
+    return J
 
-def load_dataset(folder):
-    print("Loading data set from " + folder)
-    if not folder.endswith("/"):
-        folder += "/"
-    training_dataset, training_labels, testing_dataset, testing_labels = [],[],[],[]
-    for i in range(10):
-        f_data = [c/255.0 for c in open(folder + "data" + str(i), "rb").read(784000)]
-        images = [numpy.asarray(f_data[784*j:784*(j+1)]).reshape([784,1]) for j in range(1000)]
-        label  = numpy.asarray([1 if i == j else 0 for j in range(10)]).reshape([10,1])
-        training_dataset += images[0:len(images)//2]
-        training_labels  += [label for j in range(len(images)//2)]
-        testing_dataset  += images[len(images)//2:len(images)]
-        testing_labels   += [label for j in range(len(images)//2)]
-    return list(zip(training_dataset, training_labels)), list(zip(testing_dataset, testing_labels))
+def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi):
+    pd = numpy.asarray([x,y,z,roll,pitch,yaw])  # Desired configuration
+    tolerance = 0.01
+    max_iterations = 20
+    iterations = 0
+    #
+    # TODO:
+    # Solve the IK problem given a kinematic description (Ti, Wi) and a desired configuration.
+    # where:
+    # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
+    # Wi are the axis of rotation of i-th joint
+    # Use the Newton-Raphson method for root finding. (Find the roots of equation FK(q) - pd = 0)
+    # You can do the following steps:
+    #
+    #    Set an initial guess for joints 'q'. Suggested: [-0.5, 0.6, 0.3, 2.0, 0.3, 0.2, 0.3]
+    #    Calculate Forward Kinematics 'p' by calling the corresponding function
+    #    Calcualte error = p - pd
+    #    Ensure orientation angles of error are in [-pi,pi]
+    #    WHILE |error| > TOL and iterations < maximum iterations:
+    #        Calculate Jacobian
+    #        Update q estimation with q = q - pseudo_inverse(J)*error
+    #        Ensure all angles q are in [-pi,pi]
+    #        Recalculate forward kinematics p
+    #        Recalculate error and ensure angles are in [-pi,pi]
+    #        Increment iterations
+    #    Return calculated q if maximum iterations were not exceeded
+    #    Otherwise, return None
+    #
+    return None
+
+def callback_la_ik_for_pose(req):
+    global transforms, joints
+    Ti = transforms['left']                               
+    Wi = [joints['left'][i].axis for i in range(len(joints['left']))]  
+    q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi)
+    if q is None:
+        return None
+    resp = InverseKinematicsResponse()
+    [resp.q1, resp.q2, resp.q3, resp.q4, resp.q5, resp.q6, resp.q7] = [q[0], q[1], q[2], q[3], q[4], q[5], q[6]]
+    return resp
+
+def callback_ra_ik_for_pose(req):
+    global transforms, joints
+    Ti = transforms['right']                               
+    Wi = [joints['right'][i].axis for i in range(len(joints['right']))]  
+    q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi)
+    if q is None:
+        return False
+    resp = InverseKinematicsResponse()
+    [resp.q1, resp.q2, resp.q3, resp.q4, resp.q5, resp.q6, resp.q7] = [q[0], q[1], q[2], q[3], q[4], q[5], q[6]]
+    return resp
+
+def callback_la_fk(req):
+    global transforms, joints
+    Ti = transforms['left']                               
+    Wi = [joints['left'][i].axis for i in range(len(joints['left']))]  
+    x = forward_kinematics([req.q[0], req.q[1], req.q[2], req.q[3], req.q[4], req.q[5], req.q[6]], Ti, Wi)
+    resp = ForwardKinematicsResponse()
+    [resp.x, resp.y, resp.z, resp.roll, resp.pitch, resp.yaw] = x
+    return resp
+
+def callback_ra_fk(req):
+    global transforms, joints
+    Ti = transforms['right']                               
+    Wi = [joints['right'][i].axis for i in range(len(joints['right']))]  
+    x = forward_kinematics([req.q[0], req.q[1], req.q[2], req.q[3], req.q[4], req.q[5], req.q[6]], Ti, Wi)
+    resp = ForwardKinematicsResponse()
+    [resp.x, resp.y, resp.z, resp.roll, resp.pitch, resp.yaw] = x
+    return resp
 
 def main():
-    print("PRACTICE 10 - " + NAME)
-    rospy.init_node("practice10")
-    rospack = rospkg.RosPack()
-    dataset_folder = rospack.get_path("config_files") + "/handwritten_digits/"
-    epochs        = 3
-    batch_size    = 10
-    learning_rate = 3.0
-    
-    if rospy.has_param("~epochs"):
-        epochs = rospy.get_param("~epochs")
-    if rospy.has_param("~batch_size"):
-        batch_size = rospy.get_param("~batch_size")
-    if rospy.has_param("~learning_rate"):
-        learning_rate = rospy.get_param("~learning_rate") 
-
-    training_dataset, testing_dataset = load_dataset(dataset_folder)
-    
-    try:
-        saved_data = numpy.load(dataset_folder+"network.npz",allow_pickle=True)
-        layers = [saved_data['w'][0].shape[1]] + [b.shape[0] for b in saved_data['b']]
-        nn = NeuralNetwork(layers, weights=saved_data['w'], biases=saved_data['b'])
-        print("Loading data from previously trained model with layers " + str(layers))
-    except:
-        nn = NeuralNetwork([784,30,10])
-        pass
-    
-    nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
-    numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
-    
-    print("\nPress key to test network or ESC to exit...")
-    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
-    cmd = cv2.waitKey(0)
-    while cmd != 27 and not rospy.is_shutdown():
-        img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.feedforward(img).transpose()
-        print("\nPerceptron output: " + str(y))
-        print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
-    
+    print("PRACTICE 10" + NAME)
+    rospy.init_node("ik_geometric")
+    get_model_info()
+    rospy.Service("/manipulation/la_inverse_kinematics", InverseKinematics, callback_la_ik_for_pose)
+    rospy.Service("/manipulation/ra_inverse_kinematics", InverseKinematics, callback_ra_ik_for_pose)
+    rospy.Service("/manipulation/la_forward_kinematics", ForwardKinematics, callback_la_fk)
+    rospy.Service("/manipulation/ra_forward_kinematics", ForwardKinematics, callback_ra_fk)
+    loop = rospy.Rate(10)
+    while not rospy.is_shutdown():
+        loop.sleep()
 
 if __name__ == '__main__':
     main()
