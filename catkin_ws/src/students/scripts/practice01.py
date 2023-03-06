@@ -15,7 +15,7 @@ from nav_msgs.srv import GetMap
 from nav_msgs.srv import GetMapResponse
 from nav_msgs.srv import GetMapRequest
 
-NAME = "FULL_NAME"
+NAME = "DAVID PERALES RODRÍGUEZ"
 
 def get_inflated_map(static_map, inflation_cells):
     print("Inflating map by " + str(inflation_cells) + " cells")
@@ -27,8 +27,16 @@ def get_inflated_map(static_map, inflation_cells):
     # given by 'inflation_cells' (expressed in number of cells)
     # Map is given in 'static_map' as a bidimensional numpy array.
     # Consider as occupied cells all cells with an occupation value greater than 50
-    #
-    
+    # 
+    for i in range(height):
+        for j in range(width):
+            if(static_map[i][j] == 100):
+                for k1 in range(-inflation_cells,inflation_cells+1):
+                    for k2 in range(-inflation_cells,inflation_cells+1):
+                        try:
+                            inflated[i+k1, j+k2] = 100
+                        except:
+                            pass                  
     return inflated
 
 def callback_inflated_map(req):
@@ -53,7 +61,9 @@ def main():
         if rospy.has_param("/path_planning/inflation_radius"):
             new_inflation_radius = rospy.get_param("/path_planning/inflation_radius")
         if new_inflation_radius != inflation_radius:
+            # Modificando el radio
             inflation_radius  = new_inflation_radius
+            #inflation_radius  = 1
             inflated_map_data = get_inflated_map(grid_map, int(inflation_radius/res))
             inflated_map_data = numpy.ravel(numpy.reshape(inflated_map_data, (width*height, 1)))
             inflated_map      = OccupancyGrid(info=map_info, data=inflated_map_data)
