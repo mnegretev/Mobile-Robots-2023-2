@@ -15,20 +15,18 @@ from nav_msgs.srv import GetMap
 from nav_msgs.srv import GetMapResponse
 from nav_msgs.srv import GetMapRequest
 
-NAME = "FULL_NAME"
+NAME = "Alexis Vaquero Barajas"
 
 def get_inflated_map(static_map, inflation_cells):
     print("Inflating map by " + str(inflation_cells) + " cells")
-    inflated = numpy.copy(static_map)
+    inflated = numpy.copy(static_map) # Copia de M - M_inf
     [height, width] = static_map.shape
-    #
-    # TODO:
-    # Write the code necessary to inflate the obstacles in the map a radius
-    # given by 'inflation_cells' (expressed in number of cells)
-    # Map is given in 'static_map' as a bidimensional numpy array.
-    # Consider as occupied cells all cells with an occupation value greater than 50
-    #
-    
+    for i in range(0,height):
+        for j in range(0,width):
+            if static_map[i][j] == 100:
+                for k_1 in range(-inflation_cells, inflation_cells):
+                      for k_2 in range(-inflation_cells, inflation_cells):
+                        inflated[i+k_1, j+k_2] = 100    
     return inflated
 
 def callback_inflated_map(req):
