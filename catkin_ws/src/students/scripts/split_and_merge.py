@@ -17,7 +17,7 @@ from sensor_msgs.msg   import LaserScan
 from geometry_msgs.msg import Twist, Point
 from visualization_msgs.msg import Marker
 
-NAME = "FULL NAME"
+NAME = "Ruben Escarzaga"
 
 def adjust_line(points):
     [xm,ym] = numpy.mean(points, 0)
@@ -112,9 +112,9 @@ def callback_scan(msg):
     # Modify the following parameters and compare the results:
     #
     DISTANCE_THRESHOLD  = 0.1     #Distance threshold to consider a point as part of a candidate line. 
-    MIN_POINTS_COUNTING = 1       #Minimum number of points a line should contain.
-    RHO_TOLERANCE       = 0.05    #RHO and THETA error tolerance to consider two lines as one.
-    THETA_TOLERANCE     = 0.05
+    MIN_POINTS_COUNTING = 3       #Minimum number of points a line should contain.
+    RHO_TOLERANCE       = 1  #RHO and THETA error tolerance to consider two lines as one.
+    THETA_TOLERANCE     = 1
     lines = split_and_merge(points, DISTANCE_THRESHOLD, MIN_POINTS_COUNTING, RHO_TOLERANCE, THETA_TOLERANCE)
     pub_line_markers.publish(get_line_markers(lines))
     return
