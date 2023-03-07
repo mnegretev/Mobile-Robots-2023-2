@@ -13,7 +13,7 @@ import rospy
 from sensor_msgs.msg   import LaserScan
 from geometry_msgs.msg import Twist
 
-NAME = "MARCO NEGRETE"
+NAME = "Ruben Escarzaga"
 
 def callback_scan(msg):
     global obstacle_detected
@@ -22,8 +22,8 @@ def callback_scan(msg):
     # Do something to detect if there is an obstacle in front of the robot.
     # Set the 'obstacle_detected' variable with True or False, accordingly.
     #
-    n = int((msg.anglemax−msg.anglemin)/msg.angleincrement/2 )
- obstacledetected=msg.ranges[n]< 1. 0
+     n = int((msg.angle_max−msg.angle_min)/msg.angle_increment/2 )
+ obstacle_detected=msg.ranges[n]< 1. 0
     return
 
 def main():
@@ -42,9 +42,9 @@ def main():
         # Move forward if there is no obstacle in front of the robot, and stop otherwise.
         # Use the 'obstacle_detected' variable to check if there is an obstacle. 
         # Publish the Twist message using the already declared publisher 'pub_cmd_vel'.
-        msgcmdvel = Twist( )
-        msgcmdvel.linear.x = 0 if obstacledetected else 0. 3
-         pubcmdvel.publish(msgcmdvel )
+           msg_cmd_vel = Twist()
+        msgc_md_vel.linear.x = 0 if obstacle_detected else 0. 3
+         pub_cmd_vel.publish(msg_cmd_vel)
         
         loop.sleep()
 
