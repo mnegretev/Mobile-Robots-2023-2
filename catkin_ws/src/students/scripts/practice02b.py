@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2023-2
-# PRACTICE 3b - PATH PLANNING BY A-STAR
+# PRACTICE 2b - PATH PLANNING BY A-STAR
 #
 # Instructions:
 # Write the code necessary to plan a path using an
@@ -18,7 +18,7 @@ from nav_msgs.msg import Path
 from nav_msgs.srv import *
 from collections import deque
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "RAYGOZA PEREZ BRAULIO YAIR"
 
 msg_path = Path()
 
@@ -40,8 +40,8 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map):
     # TODO:
     # Modify the list of adjacent node-offsets to use 8-connectiviy instead of 4-connectiviy
     #
-    adjacent_idx   = [[1,0],[0,1],[-1,0],[0,-1]]
-    #adjacent_idx      = [[1,0],[0,1],[-1,0],[0,-1], [1,1], [-1,1], [-1,-1],[1,-1]]
+    adjacent_idx   = [[1,0],[0,1],[-1,0],[0,-1]]		#Conectividad 4
+    #adjacent_idx      = [[1,0],[0,1],[-1,0],[0,-1], [1,1], [-1,1], [-1,-1],[1,-1]]	#Conectividad 8
     #
 
     open_list = [] 
@@ -63,10 +63,11 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map):
             # Modify calculations of 'g' and 'h' to use euclidean distance
             # instead of Manhattan distance
             #
-            g = g_values[row, col] + abs(row-r) + abs(col-c) + cost_map[r][c]
-            h = abs(goal_r - r) + abs(goal_c - c)
-            # g = g_values[row, col] + math.sqrt((row-r)**2 + (col - c)**2) + cost_map[r][c]
-            # h = math.sqrt((goal_r-r)**2 + (goal_c - c)**2)
+            g = g_values[row, col] + abs(row-r) + abs(col-c) + cost_map[r][c]	#g con distancia Manhattan
+            h = abs(goal_r - r) + abs(goal_c - c)	#h con distancia Manhattan
+            #h = 0	#Heuristica nula
+            # g = g_values[row, col] + math.sqrt((row-r)**2 + (col - c)**2) + cost_map[r][c]	#g con distancia Euclidiana
+            # h = math.sqrt((goal_r-r)**2 + (goal_c - c)**2)	#h con distancia Euclidiana
             #
             
             f = g + h                         
@@ -126,8 +127,8 @@ def callback_a_star(req):
     return GetPlanResponse(msg_path)
 
 def main():
-    print("PRACTICE 03b - " + NAME)
-    rospy.init_node("practice03b")
+    print("PRACTICE 02b - " + NAME)
+    rospy.init_node("practice02b")
     rospy.wait_for_service('/static_map')
     rospy.Service('/path_planning/a_star_search'  , GetPlan, callback_a_star)
     pub_path = rospy.Publisher('/path_planning/a_star_path', Path, queue_size=10)
