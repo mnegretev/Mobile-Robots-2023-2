@@ -15,7 +15,7 @@ from nav_msgs.srv import GetMap
 from nav_msgs.srv import GetMapResponse
 from nav_msgs.srv import GetMapRequest
 
-NAME = "FULL_NAME"
+NAME = "Ceballos Ricardo Fernando"
 
 def get_cost_map(static_map, cost_radius):
     if cost_radius > 20:
