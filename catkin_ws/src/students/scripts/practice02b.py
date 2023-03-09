@@ -18,7 +18,7 @@ from nav_msgs.msg import Path
 from nav_msgs.srv import *
 from collections import deque
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "Flores Barragan Daniel"
 
 msg_path = Path()
 
@@ -40,8 +40,8 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map):
     # TODO:
     # Modify the list of adjacent node-offsets to use 8-connectiviy instead of 4-connectiviy
     #
-    adjacent_idx   = [[1,0],[0,1],[-1,0],[0,-1]]
-    #adjacent_idx      = [[1,0],[0,1],[-1,0],[0,-1], [1,1], [-1,1], [-1,-1],[1,-1]]
+    #adjacent_idx   = [[1,0],[0,1],[-1,0],[0,-1]]
+    adjacent_idx      = [[1,0],[0,1],[-1,0],[0,-1], [1,1], [-1,1], [-1,-1],[1,-1]]
     #
 
     open_list = [] 
