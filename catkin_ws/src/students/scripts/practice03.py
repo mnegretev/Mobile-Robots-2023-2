@@ -42,7 +42,11 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     # and return it (check online documentation for the Twist message).
     # Remember to keep error angle in the interval (-pi,pi]
     #
-    
+    alpha =0.1
+    beta =0.1
+    error_a =math.atan2(goal_y - robot_y, goal_x -robot_x) - robot_a
+    v = v_max*math.exp(-error_a*error_a/alpha)
+    w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     return cmd_vel
 
 def follow_path(path):
