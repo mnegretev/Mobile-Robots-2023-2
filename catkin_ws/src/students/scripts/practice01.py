@@ -32,9 +32,9 @@ def get_inflated_map(static_map, inflation_cells):
     for i in range(0,height):
         for j in range(0, width):
             if static_map[i,j] == 100:
-                for k1 in range (-inflation_cells, inflation_cells+1):
+                for k1 in range (-inflation_cells, inflation_cells+ 1):
                     for k2 in range (-inflation_cells, inflation_cells+1):
-                        inflated[i+k1, j+k2] == 100
+                        inflated[i+k1, j+k2] = 100
     return inflated
 
 def callback_inflated_map(req):
