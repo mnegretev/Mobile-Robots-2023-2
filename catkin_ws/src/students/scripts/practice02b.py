@@ -66,8 +66,8 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map):
             #g = g_values[row, col] + abs(row-r) + abs(col-c) + cost_map[r][c]
             #h = abs(goal_r - r) + abs(goal_c - c)
             g = g_values[row, col] + math.sqrt((row-r)**2 + (col - c)**2) + cost_map[r][c]
-            #h = math.sqrt((goal_r-r)**2 + (goal_c - c)**2)
-            h = 0;
+            h = math.sqrt((goal_r-r)**2 + (goal_c - c)**2)
+            #h = 0;
             #
             
             f = g + h                         
@@ -127,7 +127,7 @@ def callback_a_star(req):
     return GetPlanResponse(msg_path)
 
 def main():
-    print("PRACTICE 03b - " + NAME)
+    print("PRACTICE 02b - " + NAME)
     rospy.init_node("practice03b")
     rospy.wait_for_service('/static_map')
     rospy.Service('/path_planning/a_star_search'  , GetPlan, callback_a_star)
