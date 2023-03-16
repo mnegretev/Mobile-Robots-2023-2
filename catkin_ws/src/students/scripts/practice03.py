@@ -18,7 +18,7 @@ from nav_msgs.srv import GetPlan, GetPlanRequest
 from custom_msgs.srv import SmoothPath, SmoothPathRequest
 from geometry_msgs.msg import Twist, PoseStamped, Pose, Point
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "RAYGOZA PEREZ"
 
 pub_goal_reached = None
 pub_cmd_vel = None
@@ -42,6 +42,24 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     # and return it (check online documentation for the Twist message).
     # Remember to keep error angle in the interval (-pi,pi]
     #
+    
+    # Parámetros
+    alpha = 0.2
+    beta = 0.3
+    v_max = 0.5
+    w_max = 1
+    
+    # Error de ángulo
+    error_a = math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a
+    if error_a < -math.pi or error_a > math.pi:
+    	error_a = (error_a + math.pi)%(2*math.pi) - math.pi
+    
+    
+    # Velocidad lineal
+    cmd_vel.linear.x = v_max*math.exp(-error_a*error_a/alpha)
+    
+    # Velocidad angular
+    cmd_vel.angular.z = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     
     return cmd_vel
 
