@@ -19,7 +19,7 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from sensor_msgs.msg import LaserScan
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "Martínez Vázquez Brayan Alexis"
 
 listener    = None
 pub_cmd_vel = None
@@ -41,7 +41,14 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     # and return it (check online documentation for the Twist message).
     # Remember to keep error angle in the interval (-pi,pi]
     #
-    
+    v_max= 0.5
+    w_max= 1.0
+    alpha= 0.5
+    beta = 0.5
+    error_a=(math.atan2(goal_y-robot_y,goal_x-robot_x)-robot_a+math.pi)%(2*math.pi)-math.pi
+    cmd_vel.linear.x = v_max*math.exp(-error_a*error_a/alpha)
+    cmd_vel.angular.z = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+
     return cmd_vel
 
 def attraction_force(robot_x, robot_y, goal_x, goal_y):
