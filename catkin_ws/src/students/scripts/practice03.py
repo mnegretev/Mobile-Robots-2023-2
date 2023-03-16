@@ -18,7 +18,7 @@ from nav_msgs.srv import GetPlan, GetPlanRequest
 from custom_msgs.srv import SmoothPath, SmoothPathRequest
 from geometry_msgs.msg import Twist, PoseStamped, Pose, Point
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "ARGUELLES BRAULIO EDUARDO"
 
 pub_goal_reached = None
 pub_cmd_vel = None
@@ -42,7 +42,13 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     # and return it (check online documentation for the Twist message).
     # Remember to keep error angle in the interval (-pi,pi]
     #
-    
+    alpha = 0.02
+    beta = 0.4
+    v_max=0.5
+    w_max=1.0
+    error_a = (math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a + math.pi)%(2*math.pi) - math.pi
+    cmd_vel.linear.x = v_max*math.exp(-error_a*error_a/alpha)
+    cmd_vel.angular.z = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     return cmd_vel
 
 def follow_path(path):
@@ -73,7 +79,7 @@ def follow_path(path):
     #
     current_point = 0
     [local_xg,  local_yg ] = path[current_point]
-    [global_xg, global_yg] = path[len(path)-1]
+    [global_xg, global_yg] = path[len(path)-1] #path[-1] nos da el ultimo elemento, es lo mismo
     [robot_x, robot_y, robot_a]    = get_robot_pose(listener)
     global_error = math.sqrt((global_xg-robot_x)**2 + (global_yg-robot_y)**2)
     local_error  = math.sqrt((local_xg-robot_x) **2 + (local_yg-robot_y) **2)
