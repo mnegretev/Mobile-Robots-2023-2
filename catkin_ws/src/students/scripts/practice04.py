@@ -1,69 +1,168 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2023-2
-# PRACTICE 4 - PATH SMOOTHING BY GRADIENT DESCEND
+# PRACTICE 04 - OBSTACLE AVOIDANCE BY POTENTIAL FIELDS
 #
 # Instructions:
-# Write the code necessary to smooth a path using the gradient descend algorithm.
-# MODIFY ONLY THE SECTIONS MARKED WITH THE 'TODO' COMMENT
+# Complete the code to implement obstacle avoidance by potential fields
+# using the attractive and repulsive fields technique.
+# Tune the constants alpha and beta to get a smooth movement. 
 #
 
-import numpy
-import heapq
 import rospy
-from nav_msgs.msg import Path
-from geometry_msgs.msg import Pose, PoseStamped, Point
-from custom_msgs.srv import SmoothPath
-from custom_msgs.srv import SmoothPathResponse
+import tf
+import math
+from std_msgs.msg import Header
+from geometry_msgs.msg import Twist
+from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Point
+from visualization_msgs.msg import Marker
+from sensor_msgs.msg import LaserScan
 
-NAME = "Arguelles Braulio Eduardo"
+NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
 
-msg_smooth_path = Path()
+listener    = None
+pub_cmd_vel = None
+pub_markers = None
 
-def smooth_path(Q, alpha, beta):
-    print("Smoothing path with params: " + str([alpha,beta]))
+def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
+    cmd_vel = Twist()
     #
     # TODO:
-    # Write the code to smooth the path Q, using the gradient descend algorithm,
-    # and return a new smoothed path P.
-    # Path is composed of a set of points [x,y] as follows:
-    # [[x0,y0], [x1,y1], ..., [xn,ym]].
-    # The smoothed path must have the same shape.
-    # Return the smoothed path.
+    # Implement the control law given by:
     #
-    P = numpy.copy(Q) #Condición inicial
-    tol     = 0.00001  #Tolerancia                 
-    nabla   = numpy.full(Q.shape, float("inf"))
-    epsilon = 0.1                       
-    steps   = 0
-    nabla[0], nabla[-1] = 0, 0
-    while numpy.linalg.norm(nabla) > tol*len(P) and steps < 100000:
-        for i in range(1, len(Q)-1):
-            nabla[i] = alpha*( 2*P[i] - P[i-1] - P[i+1]) + beta*(P[i] - Q[i])
-            P = P - epsilon*nabla
-            steps += 1
-    print("Path smoothed succesfully after " + str(steps) + " iterations")
-    return P
+    # v = v_max*math.exp(-error_a*error_a/alpha)
+    # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+    #
+    # where error_a is the angle error and
+    # v and w are the linear and angular speeds.
+    # v_max, w_max, alpha and beta, are design constants.
+    # Store the resulting v and w in the Twist message 'cmd_vel'
+    # and return it (check online documentation for the Twist message).
+    # Remember to keep error angle in the interval (-pi,pi]
+    #
+    
+    return cmd_vel
 
-def callback_smooth_path(req):
-    alpha = rospy.get_param('/path_planning/smoothing_alpha')
-    beta  = rospy.get_param('/path_planning/smoothing_beta' )
-    P = smooth_path(numpy.asarray([[p.pose.position.x, p.pose.position.y] for p in req.path.poses]), alpha, beta)
-    msg_smooth_path.poses = []
-    for i in range(len(req.path.poses)):
-        msg_smooth_path.poses.append(PoseStamped(pose=Pose(position=Point(x=P[i,0],y=P[i,1]))))
-    return SmoothPathResponse(smooth_path=msg_smooth_path)
+def attraction_force(robot_x, robot_y, goal_x, goal_y):
+    #
+    # TODO:
+    # Calculate the attraction force, given the robot and goal positions.
+    # Return a tuple of the form [force_x, force_y]
+    # where force_x and force_y are the X and Y components
+    # of the resulting attraction force w.r.t. map.
+    #
+    return [0, 0]
+
+def rejection_force(robot_x, robot_y, robot_a, laser_readings):
+    #
+    # TODO:
+    # Calculate the total rejection force given by the average
+    # of the rejection forces caused by each laser reading.
+    # laser_readings is an array where each element is a tuple [distance, angle]
+    # both measured w.r.t. robot's frame.
+    # See lecture notes for equations to calculate rejection forces.
+    # Return a tuple of the form [force_x, force_y]
+    # where force_x and force_y are the X and Y components
+    # of the resulting rejection force w.r.t. map.
+    #
+    
+    return [0, 0]
+
+def callback_pot_fields_goal(msg):
+    goal_x = msg.pose.position.x
+    goal_y = msg.pose.position.y
+    print("Moving to goal point " + str([goal_x, goal_y]) + " by potential fields")
+    loop = rospy.Rate(20)
+    global laser_readings
+
+    #
+    # TODO:
+    # Review the following code and indentify the different steps to move the
+    # robot by gradient descend throught the artificial potential field. 
+    # Remember goal point is a local minimun in the potential field, thus,
+    # it can be reached by the gradient descend algorithm.
+    # Sum of attraction and rejection forces is the gradient of the potential field.
+    #
+    # Set constant epsilon (0.5 is a good start)
+    # Set tolerance  (0.1 is a good start)
+    # Get robot position by calling robot_x, robot_y, robot_a = get_robot_pose(listener)
+    # Calculate distance to goal as math.sqrt((goal_x - robot_x)**2 + (goal_y - robot_y)**2)
+    # WHILE distance_to_goal_point > tolerance and not rospy.is_shutdown():
+    #     Calculate attraction force Fa by calling [fax, fay] = attraction_force(robot_x, robot_y, goal_x, goal_y)
+    #     Calculate rejection  force Fr by calling [frx, fry] = rejection_force (robot_x, robot_y, robot_a, laser_readings)
+    #     Calculate resulting  force F = Fa + Fr
+    #     Calculate next local goal point P = [px, py] = Pr - epsilon*F
+    #
+    #     Calculate control signals by calling msg_cmd_vel = calculate_control(robot_x, robot_y, robot_a, px, py)
+    #     Send the control signals to mobile base by calling pub_cmd_vel.publish(msg_cmd_vel)
+    #     Call draw_force_markers(robot_x, robot_y, afx, afy, rfx, rfy, fx, fy, pub_markers)  to draw all forces
+    #
+    #     Wait a little bit of time by calling loop.sleep()
+    #     Update robot position by calling robot_x, robot_y, robot_a = get_robot_pose(listener)
+    #     Recalculate distance to goal position
+    #  Publish a zero speed (to stop robot after reaching goal point)
+
+    robot_x, robot_y, robot_a = get_robot_pose(listener)
+    dist_to_goal = math.sqrt((goal_x - robot_x)**2 + (goal_y - robot_y)**2)
+    tolerance = 0.1
+    epsilon = 0.5
+    while dist_to_goal > tolerance and not rospy.is_shutdown():
+        afx, afy = attraction_force(robot_x, robot_y, goal_x, goal_y)
+        rfx, rfy = rejection_force (robot_x, robot_y, robot_a, laser_readings)
+        [fx, fy] = [afx + rfx, afy + rfy]
+        [px, py] = [robot_x - epsilon*fx, robot_y - epsilon*fy]
+        
+        msg_cmd_vel = calculate_control(robot_x, robot_y, robot_a, px, py)
+        pub_cmd_vel.publish(msg_cmd_vel)
+        draw_force_markers(robot_x, robot_y, afx, afy, rfx, rfy, fx, fy, pub_markers)
+
+        loop.sleep()
+        robot_x, robot_y, robot_a = get_robot_pose(listener)
+        dist_to_goal = math.sqrt((goal_x - robot_x)**2 + (goal_y - robot_y)**2)
+    pub_cmd_vel.publish(Twist())
+    
+    print("Goal point reached")
+
+def get_robot_pose(listener):
+    try:
+        ([x, y, z], rot) = listener.lookupTransform('map', 'base_link', rospy.Time(0))
+        a = 2*math.atan2(rot[2], rot[3])
+        a = a - 2*math.pi if a > math.pi else a
+        return [x, y, a]
+    except:
+        pass
+    return [0,0,0]
+
+def callback_scan(msg):
+    global laser_readings
+    laser_readings = [[msg.ranges[i], msg.angle_min+i*msg.angle_increment] for i in range(len(msg.ranges))]
+
+def draw_force_markers(robot_x, robot_y, attr_x, attr_y, rej_x, rej_y, res_x, res_y, pub_markers):
+    pub_markers.publish(get_force_marker(robot_x, robot_y, attr_x, attr_y, [0,0,1,1]  , 0))
+    pub_markers.publish(get_force_marker(robot_x, robot_y, rej_x,  rej_y,  [1,0,0,1]  , 1))
+    pub_markers.publish(get_force_marker(robot_x, robot_y, res_x,  res_y,  [0,0.6,0,1], 2))
+
+def get_force_marker(robot_x, robot_y, force_x, force_y, color, id):
+    hdr = Header(frame_id="map", stamp=rospy.Time.now())
+    mrk = Marker(header=hdr, ns="pot_fields", id=id, type=Marker.ARROW, action=Marker.ADD)
+    mrk.pose.orientation.w = 1
+    mrk.color.r, mrk.color.g, mrk.color.b, mrk.color.a = color
+    mrk.scale.x, mrk.scale.y, mrk.scale.z = [0.07, 0.1, 0.15]
+    mrk.points.append(Point(x=robot_x, y=robot_y))
+    mrk.points.append(Point(x=(robot_x - force_x), y=(robot_y - force_y)))
+    return mrk
 
 def main():
-    print("TAREA 04 - " + NAME)
-    rospy.init_node("practice04", anonymous=True)
-    rospy.Service('/path_planning/smooth_path', SmoothPath, callback_smooth_path)
-    pub_path = rospy.Publisher('/path_planning/smooth_path', Path, queue_size=10)
-    loop = rospy.Rate(1)
-    msg_smooth_path.header.frame_id = "map"
-    while not rospy.is_shutdown():
-        pub_path.publish(msg_smooth_path)
-        loop.sleep()
+    global listener, pub_cmd_vel, pub_markers
+    print("PRACTICE 04 - " + NAME)
+    rospy.init_node("practice04")
+    rospy.Subscriber("/hardware/scan", LaserScan, callback_scan)
+    rospy.Subscriber('/move_base_simple/goal', PoseStamped, callback_pot_fields_goal)
+    pub_cmd_vel = rospy.Publisher('/cmd_vel', Twist,  queue_size=10)
+    pub_markers = rospy.Publisher('/navigation/pot_field_markers', Marker, queue_size=10)
+    listener = tf.TransformListener()
+    rospy.spin()
 
 if __name__ == '__main__':
     try:
