@@ -66,7 +66,7 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     fax=dseta*fax/mag if mag !=0 else fax
     fay=dseta*fay/mag if mag !=0 else fay
     
-    return [0, 0]
+    return [fax, fay]
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
@@ -80,16 +80,17 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     # where force_x and force_y are the X and Y components
     # of the resulting rejection force w.r.t. map.
     #
-    d0=1
-    eta=1
+    d0=1.
+    eta=1.9
     for d,a in laser_readings
         if d>d0: 
                 continue
         mag=eta*math.sqrt(1/d-1/d0)
-        fax=math.cos(robot_a+a)
-        fax=math.sin(robot_a+a)
-              
-    return [0, 0]
+        frx=math.cos(robot_a+a)
+        frx=math.sin(robot_a+a)
+     
+    frx,fry=frx/len(laser_readings),fry/len(laser_readings)
+    return [frx, fry]
 
 def callback_pot_fields_goal(msg):
     goal_x = msg.pose.position.x
