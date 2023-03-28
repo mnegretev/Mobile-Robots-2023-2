@@ -45,7 +45,7 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
 
     # Variacion de alfa y beta
     alpha = 0.5
-    beta  = 2
+    beta  = 0.5
     
     # Velocidades - Lineal y Angular
     v_max = 0.5
