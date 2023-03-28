@@ -52,7 +52,7 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. map.
     #
-    return [-1, -1]
+    return [2, 2]
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
@@ -67,7 +67,7 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     # of the resulting rejection force w.r.t. map.
     #
     
-    return [0, 0]
+    return [2, 2]
 
 def callback_pot_fields_goal(msg):
     goal_x = msg.pose.position.x
