@@ -1,126 +1,128 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2023-2
-# PRACTICE 4 - PATH FOLLOWING
+# PRACTICE 04 - OBSTACLE AVOIDANCE BY POTENTIAL FIELDS
 #
 # Instructions:
-# Write the code necessary to move the robot along a given path.
-# Consider a differential base. Max linear and angular speeds
-# must be 0.8 and 1.0 respectively.
+# Complete the code to implement obstacle avoidance by potential fields
+# using the attractive and repulsive fields technique.
+# Tune the constants alpha and beta to get a smooth movement. 
 #
 
 import rospy
 import tf
 import math
-from std_msgs.msg import Bool
-from nav_msgs.msg import Path
-from nav_msgs.srv import GetPlan, GetPlanRequest
-from custom_msgs.srv import SmoothPath, SmoothPathRequest
-from geometry_msgs.msg import Twist, PoseStamped, Pose, Point
+from std_msgs.msg import Header
+from geometry_msgs.msg import Twist
+from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Point
+from visualization_msgs.msg import Marker
+from sensor_msgs.msg import LaserScan
 
-NAME = "González Arrieta"
+NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
 
-pub_goal_reached = None
-pub_cmd_vel = None
-loop        = None
 listener    = None
+pub_cmd_vel = None
+pub_markers = None
 
 def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     cmd_vel = Twist()
-    
-    # Parámetros
-    alpha = 0.2
-    beta = 0.4
-    v_max = 0.6
-    w_max = 0.8
-    
-    
-    # Error de ángulo y acote
-    error_a = math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a
-    if error_a < -math.pi or error_a > math.pi:
-    	error_a = (error_a + math.pi)%(2*math.pi) - math.pi
-    
     #
     # TODO:
     # Implement the control law given by:
     #
-    v = v_max*math.exp(-error_a*error_a/alpha)
-    w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+    # v = v_max*math.exp(-error_a*error_a/alpha)
+    # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     #
     # where error_a is the angle error and
-    # v and w are the linear and angular speeds taken as input signals
-    # and v_max, w_max, alpha and beta, are tunning constants.
-    # Store the resulting v and w in the Twist message cmd_vel
+    # v and w are the linear and angular speeds.
+    # v_max, w_max, alpha and beta, are design constants.
+    # Store the resulting v and w in the Twist message 'cmd_vel'
     # and return it (check online documentation for the Twist message).
     # Remember to keep error angle in the interval (-pi,pi]
     #
     
-    # Componente lineal
-    cmd_vel.linear.x = v
-    cmd_vel.linear.y = 0
-    cmd_vel.linear.z = 0
-    
-    
-    # Componente angular
-    cmd_vel.angular.x = 0
-    cmd_vel.angular.y = 0
-    cmd_vel.angular.z = w
     return cmd_vel
 
-def follow_path(path):
+def attraction_force(robot_x, robot_y, goal_x, goal_y):
     #
     # TODO:
-    # Use the calculate_control function to move the robot along the path.
-    # Path is given as a sequence of points [[x0,y0], [x1,y1], ..., [xn,yn]]
-    # The publisher for the twist message is already declared as 'pub_cmd_vel'
-    # You can use the following steps to perform the path tracking:
+    # Calculate the attraction force, given the robot and goal positions.
+    # Return a tuple of the form [force_x, force_y]
+    # where force_x and force_y are the X and Y components
+    # of the resulting attraction force w.r.t. map.
     #
-    # Set local goal point as the first point of the path
-    # Set global goal point as the last point of the path
-    # Get robot position with [robot_x, robot_y, robot_a] = get_robot_pose(listener)
-    # Calculate global error as the magnitude of the vector from robot pose to global goal point
-    # Calculate local  error as the magnitude of the vector from robot pose to local  goal point
+    return [0, 0]
+
+def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
-    # WHILE global error > tol and not rospy.is_shutdown() #This keeps the program aware of signals such as Ctrl+C
-    #     Calculate control signals v and w and publish the corresponding message
-    #     loop.sleep()  #This is important to avoid an overconsumption of processing time
-    #     Get robot position
-    #     Calculate local error
-    #     If local error is less than 0.3 (you can change this constant)
-    #         Change local goal point to the next point in the path
-    #     Calculate global error
-    # Send zero speeds (otherwise, robot will keep moving after reaching last point)
-    # Publish a 'True' using the pub_goal_reached publisher
+    # TODO:
+    # Calculate the total rejection force given by the average
+    # of the rejection forces caused by each laser reading.
+    # laser_readings is an array where each element is a tuple [distance, angle]
+    # both measured w.r.t. robot's frame.
+    # See lecture notes for equations to calculate rejection forces.
+    # Return a tuple of the form [force_x, force_y]
+    # where force_x and force_y are the X and Y components
+    # of the resulting rejection force w.r.t. map.
     #
-    current_point = 0
-    [local_xg,  local_yg ] = path[current_point]
-    [global_xg, global_yg] = path[len(path)-1]
-    [robot_x, robot_y, robot_a]    = get_robot_pose(listener)
-    global_error = math.sqrt((global_xg-robot_x)**2 + (global_yg-robot_y)**2)
-    local_error  = math.sqrt((local_xg-robot_x) **2 + (local_yg-robot_y) **2)
     
-    while not rospy.is_shutdown() and global_error > 0.1:
-        pub_cmd_vel.publish(calculate_control(robot_x, robot_y, robot_a, local_xg, local_yg))
+    return [0, 0]
+
+def callback_pot_fields_goal(msg):
+    goal_x = msg.pose.position.x
+    goal_y = msg.pose.position.y
+    print("Moving to goal point " + str([goal_x, goal_y]) + " by potential fields")
+    loop = rospy.Rate(20)
+    global laser_readings
+
+    #
+    # TODO:
+    # Review the following code and indentify the different steps to move the
+    # robot by gradient descend throught the artificial potential field. 
+    # Remember goal point is a local minimun in the potential field, thus,
+    # it can be reached by the gradient descend algorithm.
+    # Sum of attraction and rejection forces is the gradient of the potential field.
+    #
+    # Set constant epsilon (0.5 is a good start)
+    # Set tolerance  (0.1 is a good start)
+    # Get robot position by calling robot_x, robot_y, robot_a = get_robot_pose(listener)
+    # Calculate distance to goal as math.sqrt((goal_x - robot_x)**2 + (goal_y - robot_y)**2)
+    # WHILE distance_to_goal_point > tolerance and not rospy.is_shutdown():
+    #     Calculate attraction force Fa by calling [fax, fay] = attraction_force(robot_x, robot_y, goal_x, goal_y)
+    #     Calculate rejection  force Fr by calling [frx, fry] = rejection_force (robot_x, robot_y, robot_a, laser_readings)
+    #     Calculate resulting  force F = Fa + Fr
+    #     Calculate next local goal point P = [px, py] = Pr - epsilon*F
+    #
+    #     Calculate control signals by calling msg_cmd_vel = calculate_control(robot_x, robot_y, robot_a, px, py)
+    #     Send the control signals to mobile base by calling pub_cmd_vel.publish(msg_cmd_vel)
+    #     Call draw_force_markers(robot_x, robot_y, afx, afy, rfx, rfy, fx, fy, pub_markers)  to draw all forces
+    #
+    #     Wait a little bit of time by calling loop.sleep()
+    #     Update robot position by calling robot_x, robot_y, robot_a = get_robot_pose(listener)
+    #     Recalculate distance to goal position
+    #  Publish a zero speed (to stop robot after reaching goal point)
+
+    robot_x, robot_y, robot_a = get_robot_pose(listener)
+    dist_to_goal = math.sqrt((goal_x - robot_x)**2 + (goal_y - robot_y)**2)
+    tolerance = 0.1
+    epsilon = 0.5
+    while dist_to_goal > tolerance and not rospy.is_shutdown():
+        afx, afy = attraction_force(robot_x, robot_y, goal_x, goal_y)
+        rfx, rfy = rejection_force (robot_x, robot_y, robot_a, laser_readings)
+        [fx, fy] = [afx + rfx, afy + rfy]
+        [px, py] = [robot_x - epsilon*fx, robot_y - epsilon*fy]
+        
+        msg_cmd_vel = calculate_control(robot_x, robot_y, robot_a, px, py)
+        pub_cmd_vel.publish(msg_cmd_vel)
+        draw_force_markers(robot_x, robot_y, afx, afy, rfx, rfy, fx, fy, pub_markers)
+
         loop.sleep()
-        [robot_x, robot_y, robot_a] = get_robot_pose(listener)
-        local_error  = math.sqrt((local_xg-robot_x) **2 + (local_yg-robot_y) **2)
-        current_point = min(current_point+1, len(path)-1) if local_error < 0.3 else current_point
-        [local_xg,  local_yg ] = path[current_point]
-        global_error = math.sqrt((global_xg-robot_x)**2 + (global_yg-robot_y)**2)
+        robot_x, robot_y, robot_a = get_robot_pose(listener)
+        dist_to_goal = math.sqrt((goal_x - robot_x)**2 + (goal_y - robot_y)**2)
     pub_cmd_vel.publish(Twist())
-    pub_goal_reached.publish(True)
-    return
     
-def callback_global_goal(msg):
-    print("Calculating path from robot pose to " + str([msg.pose.position.x, msg.pose.position.y]))
-    [robot_x, robot_y, robot_a] = get_robot_pose(listener)
-    req = GetPlanRequest(goal=PoseStamped(pose=msg.pose))
-    req.start.pose.position = Point(x=robot_x, y=robot_y)
-    path = rospy.ServiceProxy('/path_planning/a_star_search', GetPlan)(req).plan
-    path = rospy.ServiceProxy('/path_planning/smooth_path',SmoothPath)(SmoothPathRequest(path=path)).smooth_path
-    print("Following path with " + str(len(path.poses)) + " points...")
-    follow_path([[p.pose.position.x, p.pose.position.y] for p in path.poses])
-    print("Global goal point reached")
+    print("Goal point reached")
 
 def get_robot_pose(listener):
     try:
@@ -132,18 +134,34 @@ def get_robot_pose(listener):
         pass
     return [0,0,0]
 
+def callback_scan(msg):
+    global laser_readings
+    laser_readings = [[msg.ranges[i], msg.angle_min+i*msg.angle_increment] for i in range(len(msg.ranges))]
+
+def draw_force_markers(robot_x, robot_y, attr_x, attr_y, rej_x, rej_y, res_x, res_y, pub_markers):
+    pub_markers.publish(get_force_marker(robot_x, robot_y, attr_x, attr_y, [0,0,1,1]  , 0))
+    pub_markers.publish(get_force_marker(robot_x, robot_y, rej_x,  rej_y,  [1,0,0,1]  , 1))
+    pub_markers.publish(get_force_marker(robot_x, robot_y, res_x,  res_y,  [0,0.6,0,1], 2))
+
+def get_force_marker(robot_x, robot_y, force_x, force_y, color, id):
+    hdr = Header(frame_id="map", stamp=rospy.Time.now())
+    mrk = Marker(header=hdr, ns="pot_fields", id=id, type=Marker.ARROW, action=Marker.ADD)
+    mrk.pose.orientation.w = 1
+    mrk.color.r, mrk.color.g, mrk.color.b, mrk.color.a = color
+    mrk.scale.x, mrk.scale.y, mrk.scale.z = [0.07, 0.1, 0.15]
+    mrk.points.append(Point(x=robot_x, y=robot_y))
+    mrk.points.append(Point(x=(robot_x - force_x), y=(robot_y - force_y)))
+    return mrk
+
 def main():
-    global pub_cmd_vel, pub_goal_reached, loop, listener
+    global listener, pub_cmd_vel, pub_markers
     print("PRACTICE 04 - " + NAME)
     rospy.init_node("practice04")
-    rospy.Subscriber('/move_base_simple/goal', PoseStamped, callback_global_goal)
-    pub_cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-    pub_goal_reached = rospy.Publisher('/navigation/goal_reached', Bool, queue_size=10)
+    rospy.Subscriber("/hardware/scan", LaserScan, callback_scan)
+    rospy.Subscriber('/move_base_simple/goal', PoseStamped, callback_pot_fields_goal)
+    pub_cmd_vel = rospy.Publisher('/cmd_vel', Twist,  queue_size=10)
+    pub_markers = rospy.Publisher('/navigation/pot_field_markers', Marker, queue_size=10)
     listener = tf.TransformListener()
-    loop = rospy.Rate(10)
-    print("Waiting for service for path planning...")
-    rospy.wait_for_service('/path_planning/a_star_search')
-    print("Service for path planning is now available.")
     rospy.spin()
 
 if __name__ == '__main__':
