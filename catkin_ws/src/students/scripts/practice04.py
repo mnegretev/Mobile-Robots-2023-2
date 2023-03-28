@@ -52,7 +52,7 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. map.
     #
-    return [1, 1]
+    return [-1, -1]
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
