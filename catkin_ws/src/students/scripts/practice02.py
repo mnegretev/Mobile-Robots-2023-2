@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2023-2
-# PRACTICE 01 - MAPS 
+# PRACTICE 02 - MAPS 
 #
 # Instructions:
 # Complete the code necessary to inflate the obstacles given an occupancy grid map and
@@ -43,8 +43,8 @@ def callback_inflated_map(req):
 
 def main():
     global cost_map, inflated_map
-    print("PRACTICE 01 - " + NAME)
-    rospy.init_node("practice01")
+    print("PRACTICE 02 - " + NAME)
+    rospy.init_node("practice02")
     rospy.wait_for_service('/static_map')
     pub_map  = rospy.Publisher("/inflated_map", OccupancyGrid, queue_size=10)
     grid_map = rospy.ServiceProxy("/static_map", GetMap)().map

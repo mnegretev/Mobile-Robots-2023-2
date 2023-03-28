@@ -19,7 +19,7 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from sensor_msgs.msg import LaserScan
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "Alan Dunzz LLampalllas"
 
 listener    = None
 pub_cmd_vel = None
@@ -31,8 +31,13 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     # TODO:
     # Implement the control law given by:
     #
-    # v = v_max*math.exp(-error_a*error_a/alpha)
-    # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+    alpha=0.3
+    beta=0.6
+    v_max=0.3
+    w_max=1
+    error_a=(math.atan2(goal_y-robot_y,goal_x-robot_x)-robot_a+math.pi)%(2*math.pi)-math.pi
+    cmd_vel.linear.x = v_max*math.exp(-error_a*error_a/alpha)
+    cmd_vel.angular.z = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     #
     # where error_a is the angle error and
     # v and w are the linear and angular speeds.
@@ -52,7 +57,13 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. map.
     #
-    return [0, 0]
+    zeta=0.1
+    fa_x,fa_y=robot_x-goal_x,robot_y-goal_y
+    mag=math.sqrt(fa_x**2+fa_y**2)
+    force_x=fa_x/mag if mag!=0 else fa_x
+    force_y=fa_y/mag if mag!=0 else fa_y
+    
+    return [zeta*force_x, zeta*force_y]
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
@@ -66,8 +77,19 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     # where force_x and force_y are the X and Y components
     # of the resulting rejection force w.r.t. map.
     #
+    d_0=1
+    etha=4
+    fr_x,fr_y=0,0
     
-    return [0, 0]
+    for d,a in laser_readings:
+    	if d>d_0:
+    		continue
+    	mag=etha*(math.sqrt(1/d-1/d_0))
+    	fr_x+=mag*math.cos(robot_a+a)
+    	fr_y+=mag*math.sin(robot_a+a)
+    fr_x,fr_y=fr_x/len(laser_readings),fr_y/len(laser_readings)
+    
+    return [fr_x, fr_y]
 
 def callback_pot_fields_goal(msg):
     goal_x = msg.pose.position.x
@@ -112,7 +134,8 @@ def callback_pot_fields_goal(msg):
         rfx, rfy = rejection_force (robot_x, robot_y, robot_a, laser_readings)
         [fx, fy] = [afx + rfx, afy + rfy]
         [px, py] = [robot_x - epsilon*fx, robot_y - epsilon*fy]
-        
+        print(fx)
+        print(fy)
         msg_cmd_vel = calculate_control(robot_x, robot_y, robot_a, px, py)
         pub_cmd_vel.publish(msg_cmd_vel)
         draw_force_markers(robot_x, robot_y, afx, afy, rfx, rfy, fx, fy, pub_markers)
