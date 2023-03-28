@@ -39,6 +39,7 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     error_a=(math.atan2(goal_y-robot_y,goal_x-robot_x)-robot_a+math.pi)%(2*math.pi)-math.pi
     cmd_vel.linear.x = v_max*math.exp(-error_a*error_a/alpha)
     cmd_vel.angular.z = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+
     #
     # where error_a is the angle error and
     # v and w are the linear and angular speeds taken as input signals
