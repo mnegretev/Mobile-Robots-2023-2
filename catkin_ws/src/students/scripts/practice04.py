@@ -19,7 +19,7 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from sensor_msgs.msg import LaserScan
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "REYES ALONSO"
 
 listener    = None
 pub_cmd_vel = None
@@ -41,7 +41,12 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     # and return it (check online documentation for the Twist message).
     # Remember to keep error angle in the interval (-pi,pi]
     #
-    
+    nabla[0], nabla[-1]= 0, 0
+    while numpy.linalg.norm(nabla) > tol*len(P) and steps < 100000:
+        for i in range(1, len(Q)-1):
+           nabla[i] = alpha*(2*P[i]-P[i-1]-P[i+1]) + beta*(P[i]- Q[i])
+        P=P-epsilon*nabla
+        steps += 1
     return cmd_vel
 
 def attraction_force(robot_x, robot_y, goal_x, goal_y):
