@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2023-2
-# PRACTICE 04 - OBSTACLE AVOIDANCE BY POTENTIAL FIELDS
+# PRACTICE 05 - OBSTACLE AVOIDANCE BY POTENTIAL FIELDS
 #
 # Instructions:
 # Complete the code to implement obstacle avoidance by potential fields
@@ -19,7 +19,7 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from sensor_msgs.msg import LaserScan
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "Ceballos Ricardo Fernando"
 
 listener    = None
 pub_cmd_vel = None
@@ -52,7 +52,12 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. map.
     #
-    return [0, 0]
+    csi = 1.0
+    fax, fay=robot_x - goal_x, robot_y - goal_y
+    mag = math.sqrt(fax**2 + fay**2)
+    fax = fax/mag if mag != 0 else fax
+    fay = fay/mag if mag != 0 else fay
+    return [csi*fax, csi*fay]
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
@@ -66,8 +71,18 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     # where force_x and force_y are the X and Y components
     # of the resulting rejection force w.r.t. map.
     #
-    
-    return [0, 0]
+    d0 = 1.0
+    eta = 1.0
+    frx,fry =0,0
+    for d,a in laser_readings:
+    	if d > d0:
+    		continue
+    	mag = eta*math.sqrt(1/d - 1/d0)
+    	frx +=  mag*math.cos(robot_a + a)
+    	fry +=  mag*math.sin(robot_a + a)
+    frx, fry = frx/len(laser_readings), fry/len(laser_readings) 
+    return [frx,fry]
+    #return [0, 0]
 
 def callback_pot_fields_goal(msg):
     goal_x = msg.pose.position.x
@@ -155,8 +170,8 @@ def get_force_marker(robot_x, robot_y, force_x, force_y, color, id):
 
 def main():
     global listener, pub_cmd_vel, pub_markers
-    print("PRACTICE 04 - " + NAME)
-    rospy.init_node("practice04")
+    print("PRACTICE 05 - " + NAME)
+    rospy.init_node("practice05")
     rospy.Subscriber("/hardware/scan", LaserScan, callback_scan)
     rospy.Subscriber('/move_base_simple/goal', PoseStamped, callback_pot_fields_goal)
     pub_cmd_vel = rospy.Publisher('/cmd_vel', Twist,  queue_size=10)
