@@ -66,7 +66,7 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. map.
     #
-    csi= 0.9
+    csi= 0.7
     x = (robot_x - goal_x)
     y = (robot_y - goal_y)
     modulo = math.sqrt(x**2 + y**2)
@@ -89,8 +89,8 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     # where force_x and force_y are the X and Y components
     # of the resulting rejection force w.r.t. map.
     #
-    eta = 2.0
-    d0 = 0.9
+    eta = 2.5
+    d0 = 0.7
     n = 0
     sum_x = 0
     sum_y = 0
