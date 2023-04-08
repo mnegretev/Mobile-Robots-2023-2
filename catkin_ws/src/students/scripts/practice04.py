@@ -84,12 +84,13 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     
     d0=1.
     eta=1.9
+    frz,fry=0,0
     for d,a in laser_readings:
         if d>d0: 
                 continue
         mag=eta*math.sqrt(1/d-1/d0)
         frx=math.cos(robot_a+a)
-        frx=math.sin(robot_a+a)
+        fry=math.sin(robot_a+a)
      
     frx,fry=frx/len(laser_readings),fry/len(laser_readings)
     return [frx, fry]
