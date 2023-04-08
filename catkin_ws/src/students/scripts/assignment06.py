@@ -16,11 +16,8 @@ from geometry_msgs.msg import Pose, PoseStamped, Point
 from custom_msgs.srv import SmoothPath
 from custom_msgs.srv import SmoothPathResponse
 
-<<<<<<< HEAD
-NAME = "Alan Dunzz LLampallas"
-=======
+
 NAME = "Alan Dunzz Llampallas"
->>>>>>> 65a737ec689638c57fbe41c0ffb6d89ecea25a97
 
 msg_smooth_path = Path()
 
