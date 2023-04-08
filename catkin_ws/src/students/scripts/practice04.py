@@ -19,7 +19,7 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from sensor_msgs.msg import LaserScan
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "Escarzaga_Solis_Ruben"
 
 listener    = None
 pub_cmd_vel = None
@@ -41,6 +41,30 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     # and return it (check online documentation for the Twist message).
     # Remember to keep error angle in the interval (-pi,pi]
     #
+<<<<<<< HEAD
+    P = numpy.copy(Q)
+    tol     = 0.00001                   
+    nabla   = numpy.full(Q.shape, float("inf"))
+    epsilon = 0.1                       
+    steps   = 0
+    nabla[0], nabla[-1] = 0,0
+    while numpy.linalg.norm(nabla) > tol*len(P) and steps < 100000:
+        for i in range(1, len(Q)-1):
+            nabla[i] = alpha*(2*P[i]- P[i-1] - P[i+1]) + beta*(P[i] - Q[i])
+        P = P - epsilon*nabla
+        steps += 1
+    print("Path smoothed succesfully after " + str(steps) + " iterations")
+    return P
+
+def callback_smooth_path(req):
+    alpha = rospy.get_param('/path_planning/smoothing_alpha')
+    beta  = rospy.get_param('/path_planning/smoothing_beta' )
+    P = smooth_path(numpy.asarray([[p.pose.position.x, p.pose.position.y] for p in req.path.poses]), alpha, beta)
+    msg_smooth_path.poses = []
+    for i in range(len(req.path.poses)):
+        msg_smooth_path.poses.append(PoseStamped(pose=Pose(position=Point(x=P[i,0],y=P[i,1]))))
+    return SmoothPathResponse(smooth_path=msg_smooth_path)
+=======
     
     return cmd_vel
 
@@ -152,6 +176,7 @@ def get_force_marker(robot_x, robot_y, force_x, force_y, color, id):
     mrk.points.append(Point(x=robot_x, y=robot_y))
     mrk.points.append(Point(x=(robot_x - force_x), y=(robot_y - force_y)))
     return mrk
+>>>>>>> 6bad25be6a4f08863a529bec4e2f0a2365e83366
 
 def main():
     global listener, pub_cmd_vel, pub_markers
@@ -169,4 +194,3 @@ if __name__ == '__main__':
         main()
     except rospy.ROSInterruptException:
         pass
-    
