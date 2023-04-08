@@ -19,7 +19,7 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from sensor_msgs.msg import LaserScan
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "Farfán Cnales"
 
 listener    = None
 pub_cmd_vel = None
@@ -84,7 +84,7 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     
     d0=1.
     eta=1.9
-    for d,a in laser_readings
+    for d,a in laser_readings:
         if d>d0: 
                 continue
         mag=eta*math.sqrt(1/d-1/d0)
