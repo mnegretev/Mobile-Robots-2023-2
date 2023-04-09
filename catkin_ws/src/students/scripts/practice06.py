@@ -16,7 +16,7 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from sensor_msgs.msg import LaserScan
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "Pina Ramirez Bryan Rene"
 
 def main():
     global listener, pub_cmd_vel, pub_markers
