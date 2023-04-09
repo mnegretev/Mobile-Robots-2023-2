@@ -84,7 +84,7 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     
     d0=1.
     eta=1.9
-    frz,fry=0,0
+    frx,fry=0,0
     for d,a in laser_readings:
         if d>d0: 
                 continue
