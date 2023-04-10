@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2023-2
-# PRACTICE 04 - OBSTACLE AVOIDANCE BY POTENTIAL FIELDS
+# PRACTICE 4 - OBSTACLE AVOIDANCE BY POTENTIAL FIELDS
 #
 # Instructions:
 # Complete the code to implement obstacle avoidance by potential fields
@@ -19,20 +19,27 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from sensor_msgs.msg import LaserScan
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
-
+NAME = "Martinez Garcia Isaac"
 listener    = None
 pub_cmd_vel = None
 pub_markers = None
 
+v_max = 0.3
+w_max = 1.0
+alpha = 0.2
+beta = 0.1
+
 def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     cmd_vel = Twist()
+    error_a = math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a
+    if error_a < -math.pi or error_a > math.pi:
+     error_a = (error_a + math.pi)%(2*math.pi) - math.pi
     #
     # TODO:
     # Implement the control law given by:
     #
-    # v = v_max*math.exp(-error_a*error_a/alpha)
-    # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+    v = v_max*math.exp(-error_a*error_a/alpha)
+    w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     #
     # where error_a is the angle error and
     # v and w are the linear and angular speeds.
@@ -41,10 +48,17 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     # and return it (check online documentation for the Twist message).
     # Remember to keep error angle in the interval (-pi,pi]
     #
-    
+    cmd_vel.linear.x = v
+    cmd_vel.linear.y = 0.0
+    cmd_vel.linear.z = 0.0
+    cmd_vel.angular.z = w
+    cmd_vel.angular.x = 0.0
+    cmd_vel.angular.y = 0.0
+
     return cmd_vel
 
-def attraction_force(robot_x, robot_y, goal_x, goal_y):
+def attraction_force(robot_x, robot_y, goal_x, goal_y):    
+   
     #
     # TODO:
     # Calculate the attraction force, given the robot and goal positions.
@@ -52,9 +66,18 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. map.
     #
-    return [0, 0]
+    csi= 0.7
+    x = (robot_x - goal_x)
+    y = (robot_y - goal_y)
+    modulo = math.sqrt(x**2 + y**2)
+    force_x = x / modulo
+    force_y = y / modulo
+    A = [csi * force_x, csi * force_y]
+
+    return A
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
+    
     #
     # TODO:
     # Calculate the total rejection force given by the average
@@ -66,8 +89,30 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     # where force_x and force_y are the X and Y components
     # of the resulting rejection force w.r.t. map.
     #
+    eta = 2.5
+    d0 = 0.7
+    n = 0
+    sum_x = 0
+    sum_y = 0
+    force_x = 0
+    force_y = 0
+    for [dist, ang] in laser_readings:
+     if dist < d0:
+      op = eta * math.sqrt((1/dist) - (1/d0))
+      x = math.cos(ang + robot_a) / dist
+      y = math.sin(ang + robot_a) / dist
+      sum_x = x * op
+      sum_y = y * op
+     else:
+      sum_x = 0
+      sum_y = 0
+     force_x += sum_x
+     force_y += sum_y
+     n+=1
+    force_x = force_x / n
+    force_y = force_y / n
     
-    return [0, 0]
+    return [force_x, force_y]
 
 def callback_pot_fields_goal(msg):
     goal_x = msg.pose.position.x
@@ -78,7 +123,7 @@ def callback_pot_fields_goal(msg):
 
     #
     # TODO:
-    # Review the following code and indentify the different steps to move the
+    # Examine the following code and indentify the different steps to move the
     # robot by gradient descend throught the artificial potential field. 
     # Remember goal point is a local minimun in the potential field, thus,
     # it can be reached by the gradient descend algorithm.
@@ -156,7 +201,7 @@ def get_force_marker(robot_x, robot_y, force_x, force_y, color, id):
 def main():
     global listener, pub_cmd_vel, pub_markers
     print("PRACTICE 04 - " + NAME)
-    rospy.init_node("practice04")
+    rospy.init_node("practice06")
     rospy.Subscriber("/hardware/scan", LaserScan, callback_scan)
     rospy.Subscriber('/move_base_simple/goal', PoseStamped, callback_pot_fields_goal)
     pub_cmd_vel = rospy.Publisher('/cmd_vel', Twist,  queue_size=10)
@@ -169,4 +214,3 @@ if __name__ == '__main__':
         main()
     except rospy.ROSInterruptException:
         pass
-    
