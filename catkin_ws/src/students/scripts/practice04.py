@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2023-2
-# PRACTICE 04 - OBSTACLE AVOIDANCE BY POTENTIAL FIELDS
+# PRACTICE 4 - OBSTACLE AVOIDANCE BY POTENTIAL FIELDS
 #
 # Instructions:
 # Complete the code to implement obstacle avoidance by potential fields
@@ -20,15 +20,14 @@ from visualization_msgs.msg import Marker
 from sensor_msgs.msg import LaserScan
 
 NAME = "Brito Serrano Miguel Angel"
-
 listener    = None
 pub_cmd_vel = None
 pub_markers = None
 
-v_max = 0.3
+v_max = 0.4
 w_max = 1.0
-alpha = 0.2
-beta = 0.1
+alpha = 0.3
+beta = 0.2
 
 def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     cmd_vel = Twist()
@@ -59,7 +58,7 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     return cmd_vel
 
 def attraction_force(robot_x, robot_y, goal_x, goal_y):    
-    zeta = 0.8
+   
     #
     # TODO:
     # Calculate the attraction force, given the robot and goal positions.
@@ -67,23 +66,18 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. map.
     #
+    csi= 0.7
     x = (robot_x - goal_x)
     y = (robot_y - goal_y)
     modulo = math.sqrt(x**2 + y**2)
     force_x = x / modulo
     force_y = y / modulo
-    Fatt = [zeta * force_x, zeta * force_y]
+    A = [csi * force_x, csi * force_y]
 
-    return Fatt
+    return A
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
-    eta = 0.5
-    d0 = 2
-    n = 0
-    sum_x = 0
-    sum_y = 0
-    force_x = 0
-    force_y = 0
+    
     #
     # TODO:
     # Calculate the total rejection force given by the average
@@ -95,6 +89,13 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     # where force_x and force_y are the X and Y components
     # of the resulting rejection force w.r.t. map.
     #
+    eta = 2.5
+    d0 = 0.7
+    n = 0
+    sum_x = 0
+    sum_y = 0
+    force_x = 0
+    force_y = 0
     for [dist, ang] in laser_readings:
      if dist < d0:
       op = eta * math.sqrt((1/dist) - (1/d0))
@@ -199,7 +200,7 @@ def get_force_marker(robot_x, robot_y, force_x, force_y, color, id):
 
 def main():
     global listener, pub_cmd_vel, pub_markers
-    print("PRACTICE 05 - " + NAME)
+    print("PRACTICE 04 - " + NAME)
     rospy.init_node("practice06")
     rospy.Subscriber("/hardware/scan", LaserScan, callback_scan)
     rospy.Subscriber('/move_base_simple/goal', PoseStamped, callback_pot_fields_goal)
