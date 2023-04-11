@@ -72,6 +72,7 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # of the resulting attraction force w.r.t. map.
     #
 
+    #Sintonize
     zeta = 1.0 # zeta > 0
 
     q1 = robot_x - goal_x #X difference
@@ -97,7 +98,25 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     # of the resulting rejection force w.r.t. map.
     #
     
-    return [0, 0]
+    force_x = 0
+    force_y = 0
+    
+    #Sintonize 
+    eta = 0.9
+    d0 = 3.0
+
+    for d, a in laser_readings:
+        if(d >= d0):
+            continue
+        M = eta * math.sqrt(1/d - 1/d0)
+        force_x += M * math.cos(robot_a + a)
+        force_y += M * math.sin(robot_a + a)
+
+    N = len(laser_readings)
+    force_x = 1/N * force_x
+    force_y = 1/N * force_y
+
+    return [force_x, force_y]
 
 def callback_pot_fields_goal(msg):
     goal_x = msg.pose.position.x
