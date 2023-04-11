@@ -72,12 +72,17 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # of the resulting attraction force w.r.t. map.
     #
 
+    zeta = 1.0 # zeta > 0
 
+    q1 = robot_x - goal_x #X difference
+    q2 = robot_y - goal_y #Y difference
 
+    M = math.sqrt((robot_x - goal_x) ** 2 + (robot_y - goal_y) ** 2) #Module
+    
+    force_x = q1 / M if M != 0 else force_x = q1
+    force_y = q2 / M if M != 0 else force_y = q2
 
-
-
-    return [0, 0]
+    return [zeta * force_x, zeta * force_y]
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
