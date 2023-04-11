@@ -17,8 +17,9 @@ from nav_msgs.msg import Path
 from nav_msgs.srv import GetPlan, GetPlanRequest
 from custom_msgs.srv import SmoothPath, SmoothPathRequest
 from geometry_msgs.msg import Twist, PoseStamped, Pose, Point
+from math import *
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "PEREZ YANEZ MIGUEL ANGEL"
 
 pub_goal_reached = None
 pub_cmd_vel = None
