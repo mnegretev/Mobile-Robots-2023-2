@@ -18,8 +18,9 @@ from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from sensor_msgs.msg import LaserScan
-
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+from math import *
+ 
+NAME = "PEREZ YANEZ MIGUEL ANGEL"
 
 listener    = None
 pub_cmd_vel = None
@@ -27,6 +28,13 @@ pub_markers = None
 
 def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     cmd_vel = Twist()
+
+    #My input
+    alpha = 0.6
+    beta = 0.3
+    v_max = 0.9
+    w_max 0.6
+
     #
     # TODO:
     # Implement the control law given by:
@@ -41,7 +49,18 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     # and return it (check online documentation for the Twist message).
     # Remember to keep error angle in the interval (-pi,pi]
     #
-    
+
+    error_a = math.atan2(goal_y - robot_y, goal_x - robot_x) - math.robot_a
+
+    if(-math.pi < error_a < math.pi):
+        error_a = ((math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a) + math.pi) % (2 * math.pi) - math.pi
+
+    v = v_max*math.exp(-error_a*error_a/alpha)
+    w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+
+    cmd_vel.linear.x = v
+    cmd_vel.linear.z = w
+
     return cmd_vel
 
 def attraction_force(robot_x, robot_y, goal_x, goal_y):
@@ -52,6 +71,12 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. map.
     #
+
+
+
+
+
+
     return [0, 0]
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
