@@ -41,31 +41,15 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     # and return it (check online documentation for the Twist message).
     # Remember to keep error angle in the interval (-pi,pi]
     #
-<<<<<<< HEAD
-    P = numpy.copy(Q)
-    tol     = 0.00001                   
-    nabla   = numpy.full(Q.shape, float("inf"))
-    epsilon = 0.1                       
-    steps   = 0
-    nabla[0], nabla[-1] = 0,0
-    while numpy.linalg.norm(nabla) > tol*len(P) and steps < 100000:
-        for i in range(1, len(Q)-1):
-            nabla[i] = alpha*(2*P[i]- P[i-1] - P[i+1]) + beta*(P[i] - Q[i])
-        P = P - epsilon*nabla
-        steps += 1
-    print("Path smoothed succesfully after " + str(steps) + " iterations")
-    return P
-
-def callback_smooth_path(req):
-    alpha = rospy.get_param('/path_planning/smoothing_alpha')
-    beta  = rospy.get_param('/path_planning/smoothing_beta' )
-    P = smooth_path(numpy.asarray([[p.pose.position.x, p.pose.position.y] for p in req.path.poses]), alpha, beta)
-    msg_smooth_path.poses = []
-    for i in range(len(req.path.poses)):
-        msg_smooth_path.poses.append(PoseStamped(pose=Pose(position=Point(x=P[i,0],y=P[i,1]))))
-    return SmoothPathResponse(smooth_path=msg_smooth_path)
-=======
-    
+    v_max = 0.5
+    w_max = 1.0
+    alpha = 0.3
+    beta = 3
+    error_a = ((math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a + math.pi) % (2*math.pi))- math.pi
+    v = v_max*math.exp(-error_a*error_a/alpha)
+    w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+    cmd_vel.linear.x = v
+    cmd_vel.angular.z = w    
     return cmd_vel
 
 def attraction_force(robot_x, robot_y, goal_x, goal_y):
@@ -76,7 +60,14 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. map.
     #
-    return [0, 0]
+    zeta = 0.8 #Parámetro de sintonización
+    fax, fay = robot_x - goal_x, robot_y - goal_y
+    mag = math.sqrt(fax**2 + fay**2)
+
+    fax = zeta*(fax/mag) if mag!=0 else fax
+    fay = zeta*(fay/mag) if mag!=0 else fay
+
+    return [fax, fay]
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
@@ -90,8 +81,16 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     # where force_x and force_y are the X and Y components
     # of the resulting rejection force w.r.t. map.
     #
-    
-    return [0, 0]
+    d0 = 1.0; eta = 4.0; frx, fry = 0,0
+    for d, a in laser_readings:
+        if d > d0:
+            continue
+        mag = eta*math.sqrt(1/d - 1/d0)
+        frx += mag*math.cos(robot_a + a)
+        fry += mag*math.sin(robot_a + a)
+    frx, fry = frx/len(laser_readings), fry/len(laser_readings)
+
+    return [frx, fry]
 
 def callback_pot_fields_goal(msg):
     goal_x = msg.pose.position.x
@@ -176,7 +175,6 @@ def get_force_marker(robot_x, robot_y, force_x, force_y, color, id):
     mrk.points.append(Point(x=robot_x, y=robot_y))
     mrk.points.append(Point(x=(robot_x - force_x), y=(robot_y - force_y)))
     return mrk
->>>>>>> 6bad25be6a4f08863a529bec4e2f0a2365e83366
 
 def main():
     global listener, pub_cmd_vel, pub_markers
