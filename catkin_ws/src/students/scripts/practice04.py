@@ -61,12 +61,13 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. map.
     #
-  csi = 1.0
+    csi = 1.0
     fax, fay = robot_x - goal_x, robot_y - goal_y
     mag = math.sqrt(fax**2 + fay**2)
-    fax = fax/mag if mag != 0 else fax
-    fay = fay/mag if mag != 0 else fay
-    return [csi*fax, csi*fay]
+    
+    fax = csi*(fax/mag) if mag != 0 else fax
+    fay = csi*(fay/mag) if mag != 0 else fay
+    return [fax, fay]
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
