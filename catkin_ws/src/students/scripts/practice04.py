@@ -74,7 +74,7 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     force_y = y / modulo
     Fatt = [zeta * force_x, zeta * force_y]
     
-    return [0, 0]
+    return Fatt
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     eta = 0.5
@@ -111,7 +111,7 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     force_x = force_x / n
     force_y = force_y / n
     
-    return [0, 0]
+    return [force_x, force_y]
 
 def callback_pot_fields_goal(msg):
     goal_x = msg.pose.position.x
