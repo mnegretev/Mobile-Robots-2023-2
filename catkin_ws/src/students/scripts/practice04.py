@@ -44,10 +44,10 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     #
     
     #Parametros
-    alpha = 0.7
-    beta = 2.0
-    v_max = 0.8
-    w_max = 1.0
+    alpha = 0.2 #amplitud de curva
+    beta = 0.3 #oscilaciones
+    v_max = 0.5
+    w_max = 1
     
     
     # Error de ángulo
@@ -74,7 +74,7 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     #
     
     #Magnitud de atracciòn zeta
-    z = 3
+    z = 1
     
     # Dirección
     
@@ -107,9 +107,9 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
     
     # Magnitud de rupulsión etha
-    e = 5 # valor grande repulsion grande
+    e = 1 # valor grande repulsion grande
     # Distancia de influencia
-    d0 = 1
+    d0 = 0.6
     force_x = 0
     force_y = 0
     
@@ -120,7 +120,7 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
         if (d_ang[0] < d0):
             q_oi = numpy.array([d_ang_x, d_ang_y])
             q = numpy.array([robot_x, robot_y])
-            rejectionForce = e*(math.sqrt((1/d_ang[0])-(1/d0)))*((q_oi-q)/d_ang[0])
+            rejectionForce = e*(math.sqrt((1/d_ang[0])-(1/d0)))*((q_oi-q))
             
             for i in numpy.nditer(rejectionForce):
                 force_x += rejectionForce[0]
@@ -236,4 +236,3 @@ if __name__ == '__main__':
     except rospy.ROSInterruptException:
         pass
     
-
