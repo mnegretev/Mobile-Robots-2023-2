@@ -109,7 +109,7 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
 
 
     
-    return [0, 0]
+    return [frx, fry]
 
 def callback_pot_fields_goal(msg):
     goal_x = msg.pose.position.x
