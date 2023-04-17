@@ -43,15 +43,15 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     #
     #Definiendo constantes de diseño
     
-    alpha = 0.1
-    beta  = 0.1
+    alpha = 0.4
+    beta  = 0.3
     
     #Definiendo constantes de velocidades lineares y angulares 
     
     v_max = 0.5
     w_max = 0.5
 
-    print(f'{alpha} - {beta}')
+    
 
     #Error de angulo considerando el intervalo (-pi,pi]
 
@@ -76,7 +76,7 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # of the resulting attraction force w.r.t. map.
     #
 
-    xi = 0.3
+    xi = 0.9
 
     dx, dy = robot_x - goal_x, robot_y - goal_y
 
@@ -100,7 +100,7 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
      
      
-    eta = 1.0
+    eta = 0.9
     d0  = 1.0
     frx,fry = 0,0
 
