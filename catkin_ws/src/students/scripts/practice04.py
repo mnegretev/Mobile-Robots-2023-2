@@ -19,7 +19,7 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from sensor_msgs.msg import LaserScan
 
-NAME = "APELLIDO_PATERNO_APELLIDO_MATERNO"
+NAME = "VALDERRABANO VEGA ABRAHAM"
 
 listener    = None
 pub_cmd_vel = None
@@ -42,6 +42,26 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     # Remember to keep error angle in the interval (-pi,pi]
     #
     
+    #Definiendo constantes de diseño
+    
+    alpha = 0.5
+    beta  = 0.5
+    
+    #Definiendo constantes de velocidades lineares y angulares 
+    
+    v_max = 0.5
+    w_max = 1.0
+
+    #Error de angulo considerando el intervalo (-pi,pi]
+
+    error_a = (math.atan2(goal_y-robot_y,goal_x-robot_x)-robot_a + math.pi)%(2*math.pi)-math.pi
+
+    #Asignando velocidades al robot 
+    
+    cmd_vel.linear.x=v_max*math.exp(-error_a*error_a/alpha)
+    cmd_vel.angular.z=w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+
+    
     return cmd_vel
 
 def attraction_force(robot_x, robot_y, goal_x, goal_y):
@@ -52,7 +72,14 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. map.
     #
-    return [0, 0]
+    xi = 0.3
+
+    dx, dy = robot_x - goal_x, robot_y - goal_y
+
+    mag = (dx**2 + dy**2)**0.5
+
+    force_x, force_y = xi*(dx/mag), xi*(dy/mag) 
+    return [force_x, force_y]
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
@@ -66,6 +93,21 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     # where force_x and force_y are the X and Y components
     # of the resulting rejection force w.r.t. map.
     #
+    
+    eta = 1.0
+    d0  = 1.0
+    frx,fry = 0,0
+
+    for d,a in laser_readings:
+        if d>d0:
+            continue
+        mag = eta*math.sqrt(1/d - 1/d0)
+        frx+=mag*math.cos(robot_a + a)
+        fry+=mag*math.sin(robot_a + a)
+    
+    frx, fry = frx/len(laser_readings), fry/len(laser_readings)
+
+
     
     return [0, 0]
 
