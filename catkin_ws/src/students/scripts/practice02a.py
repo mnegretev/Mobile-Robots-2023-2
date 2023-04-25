@@ -15,7 +15,7 @@ from nav_msgs.srv import GetMap
 from nav_msgs.srv import GetMapResponse
 from nav_msgs.srv import GetMapRequest
 
-NAME = "FULL_NAME"
+NAME = "Cruz Carrizosa Samael Xecotcovach"
 
 def get_cost_map(static_map, cost_radius):
     if cost_radius > 20:
@@ -42,7 +42,22 @@ def get_cost_map(static_map, cost_radius):
     #  [ 3 X 3 3 3 2]
     #  [ 3 3 3 X 3 2]]
     # Cost_radius indicate the number of cells around obstacles with costs greater than zero.
+    for i in range (height):
+    	for j in range (width):
+    		if static_map[i,j] > 50:
+    			for k1 in range (-cost_radius, cost_radius+1):
+    				for k2 in range (-cost_radius, cost_radius+1):
+    					cost = cost_radius - max(abs(k1), abs(k2)) +1
+    					cost_map[i+k1, j+k2] = max(cost, cost_map[i+k1, j+k2])     
     
+
+    #for i in range(height):
+    #    for j in range(width):
+    #        if static_map[i,j] > 50:
+    #            for k1 in range(-cost_radius, cost_radius+1):
+    #                for k2 in range(-cost_radius, cost_radius+1):
+    #                    cost = cost_radius - max(abs(k1), abs(k2))+1
+    #                    cost_map[i+k1,j+k2] = max(cost, cost_map[i+k1,j+k2])
     return cost_map
 
 def callback_cost_map(req):
@@ -51,7 +66,7 @@ def callback_cost_map(req):
     
 def main():
     global cost_map, inflated_map
-    print("PRACTICE 02a - " + NAME)
+    print("PRACTICE 02a - " + "Cruz Carrizosa Samael Xecotcovach")
     rospy.init_node("practice02a")
     rospy.wait_for_service('/static_map')
     grid_map = rospy.ServiceProxy("/static_map", GetMap)().map
