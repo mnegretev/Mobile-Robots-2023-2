@@ -1,6 +1,6 @@
 /*
  * MOBILE ROBOTS - UNAM, FI, 2023-2
- * PRACTICE 7 - LOCALIZATION BY PARTICLE FILTERS
+ * PRACTICE 05 - LOCALIZATION BY PARTICLE FILTERS
  *
  * Instructions:
  * Write the code necessary to implement localization by particle filters.
@@ -68,16 +68,16 @@ std::vector<sensor_msgs::LaserScan> simulate_particle_scans(geometry_msgs::PoseA
     return simulated_scans;
 }
 
-std::vector<float> calculate_particle_weights(std::vector<sensor_msgs::LaserScan>& simulated_scans, sensor_msgs::LaserScan& real_scan)
+std::vector<float> calculate_particle_similarities(std::vector<sensor_msgs::LaserScan>& simulated_scans, sensor_msgs::LaserScan& real_scan)
 {
-    std::vector<float> weights;
-    weights.resize(simulated_scans.size());
+    std::vector<float> similarities;
+    similarities.resize(simulated_scans.size());
     /*
      * TODO:
      *
-     * For each particle, calculate a weight indicating the similarity between its simulated scan and the real scan.
-     * Normalize all weights (the sum of all values must always be 1.0)
-     * Store results in 'weights'.
+     * For each particle, calculate the similarity between its simulated scan and the real scan.
+     * Normalize all similarities (the sum of all values must always be 1.0)
+     * Store results in 'similarities'.
      * IMPORTANT NOTE 1. The real sensor scans are DOWNSAMPLED. That is, only 1 out of LASER_DOWNSAMPLING scans is considered, i.e.,
      * For example, if LASER_DOWNSAMPLING=10, then, if real sensor has 500 ranges, simulated scans will only have 50 ranges
      * When comparing readings, for each reading in the simulated scan, you should skip LASER_DOWNSAMPLING readings
@@ -86,25 +86,25 @@ std::vector<float> calculate_particle_weights(std::vector<sensor_msgs::LaserScan
      * ensure both simulated and real ranges are finite values. 
      */
     
-    return weights;
+    return similarities;
 }
 
-int random_choice(std::vector<float>& weights)
+int random_choice(std::vector<float>& probabilities)
 {
     random_numbers::RandomNumberGenerator rnd;
     
     /*
      * TODO:
      *
-     * Write an algorithm to choice an integer in the range [0, N-1], with N, the size of 'weights'.
-     * Probability of picking an integer 'i' is given by the corresponding weights[i] value.
+     * Write an algorithm to choice an integer in the range [0, N-1], with N, the size of 'probabilities'.
+     * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
      * Return the chosen integer. 
      */
     
     return -1;
 }
 
-geometry_msgs::PoseArray resample_particles(geometry_msgs::PoseArray& particles, std::vector<float>& weights)
+geometry_msgs::PoseArray resample_particles(geometry_msgs::PoseArray& particles, std::vector<float>& probabilities)
 {
     random_numbers::RandomNumberGenerator rnd;
     geometry_msgs::PoseArray resampled_particles;
@@ -114,7 +114,7 @@ geometry_msgs::PoseArray resample_particles(geometry_msgs::PoseArray& particles,
      * TODO:
      *
      * Sample, with replacement, N particles from the set 'particles'.
-     * The probability of the i-th particle of being resampled is given by weights[i].
+     * The probability of the i-th particle of being resampled is given by probabilities[i].
      * Use the random_choice function to pick a particle with the correct probability.
      * Add gaussian noise to each sampled particle (add noise to x,y and theta).
      * Use RESAMPLING_NOISE as noise variance.
@@ -209,8 +209,8 @@ tf::Transform get_map_to_odom_transform(geometry_msgs::Pose2D odom, geometry_msg
 
 int main(int argc, char** argv)
 {
-    std::cout << "PRACTICE 07 - " << NOMBRE << std::endl;
-    ros::init(argc, argv, "practice07");
+    std::cout << "PRACTICE 05 - " << NOMBRE << std::endl;
+    ros::init(argc, argv, "practice05");
     ros::NodeHandle n("~");
     ros::Rate loop(20);
     ros::Subscriber sub_scan      = n.subscribe("/hardware/scan", 1, callback_laser_scan);
@@ -249,7 +249,7 @@ int main(int argc, char** argv)
     geometry_msgs::PoseArray particles;                   //A set of N particles
     nav_msgs::OccupancyGrid static_map;                   //A static map
     std::vector<sensor_msgs::LaserScan> simulated_scans;  //A set of simulated laser readings, one scan per particle
-    std::vector<float> particle_weights;                  //A set of weights for each particle
+    std::vector<float> particle_similarities;             //A set of similarities for each particle
     geometry_msgs::Pose2D robot_odom;                     //Position estimated by the odometry
     geometry_msgs::Pose2D delta_pose;                     //Displacement since last pose estimation
     geometry_msgs::Pose2D robot_pose;                     //Estimated robot position with respect to map
@@ -287,7 +287,7 @@ int main(int argc, char** argv)
              *
              * Move all particles a displacement given by delta_pose (Pose2D message) by calling the move_particles function.
              * Get the set of simulated scans for each particles. Use the simulate_particle_scans function.
-             * Get the set of weights by calling the calculate_particle_weights function
+             * Get the set of similarities by calling the calculate_particle_similarities function. Assign result to 'similarities'
              * Resample particles by calling the resample_particles function
              */
 
