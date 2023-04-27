@@ -48,8 +48,8 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     
     #Definiendo constantes de velocidades lineares y angulares 
     
-    v_max = 0.5
-    w_max = 0.5
+    v_max = 0.3
+    w_max = 0.7
 
     
 
