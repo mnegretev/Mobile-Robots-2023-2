@@ -74,11 +74,7 @@ std::vector<sensor_msgs::LaserScan> simulate_particle_scans(geometry_msgs::PoseA
      * Use the variable 'real_sensor_info' (already declared as global variable) for the real sensor information
      */
     for(size_t i=0; i < particles.poses.size(); i++)
-    {
         simulated_scans[i] = *occupancy_grid_utils::simulateRangeScan(map,particles.poses[i],real_sensor_info);
-        return simulated_scans;
-    }
-
     return simulated_scans;
 }
 
@@ -113,10 +109,7 @@ std::vector<float> calculate_particle_similarities(std::vector<sensor_msgs::Lase
         weights_sum += similarities[i];
     }
     for(int i=0; i < similarities.size(); i++)
-    {
         similarities[i] /= weights_sum;
-    }
-    
     return similarities;
 }
 
@@ -186,7 +179,7 @@ void move_particles(geometry_msgs::PoseArray& particles, float delta_x, float de
      */
     for(size_t i=0; i < particles.poses.size(); i++)
     {
-        float a = atan2(particles.poses[i].orientation.z,particles.poses[i].orientation.w)*2;
+        float a = atan2(particles.poses[i].orientation.z, particles.poses[i].orientation.w)*2;
         particles.poses[i].position.x += delta_x*cos(a) - delta_y*sin(a) + rnd.gaussian(0,MOVEMENT_NOISE);
         particles.poses[i].position.y += delta_x*sin(a) + delta_y*cos(a) + rnd.gaussian(0,MOVEMENT_NOISE);
         a += delta_t + rnd.gaussian(0,MOVEMENT_NOISE);
