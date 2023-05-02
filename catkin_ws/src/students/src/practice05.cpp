@@ -1,6 +1,6 @@
 /*
  * MOBILE ROBOTS - UNAM, FI, 2023-2
- * PRACTICE 07 - LOCALIZATION BY PARTICLE FILTERS
+ * PRACTICE 05 - LOCALIZATION BY PARTICLE FILTERS
  *
  * Instructions:
  * Write the code necessary to implement localization by particle filters.
@@ -47,15 +47,18 @@ geometry_msgs::PoseArray get_initial_distribution(int N, float min_x, float max_
      * For the Euler angles (roll, pitch, yaw) = (0,0,theta) the corresponding quaternion is
      * given by (0,0,sin(theta/2), cos(theta/2)). 
      */
-    for(size_t i=0; i<particles.poses.size(); i++){
-        int idx = random_choice(probabilities);
-        resampled_particles.poses[i].position.x = particles.poses[idx].position.x + rnd.gaussian(0, RESAMPLING_NOISE);
-        resampled_particles.poses[i].position.y = particles.poses[idx].position.y + rnd.gaussian(0, RESAMPLING_NOISE);
-        float angle = atan2(particles.poses[idx].orientation.z, particles.poses[idx].orientation.w)*2;
-        angle += rnd.gaussian(0, RESAMPLING_NOISE);
-        resampled_particles.poses[i].orientation.w = cos(angle/2);
-        resampled_particles.poses[i].orientation.z = sin(angle/2);
-     }
+    // fill p appropriately
+    for(size_t i=0; i < particles.poses.size(); i++){    
+        
+        // Position
+        particles.poses[i].position.x = rnd.uniformReal(min_x,max_x);
+        particles.poses[i].position.y = rnd.uniformReal(min_y,max_y);
+        float theta = rnd.uniformReal(min_a,max_a);
+        // Quaternion orientation
+        particles.poses[i].orientation.z = sin(theta/2);
+        particles.poses[i].orientation.w = cos(theta/2);
+     
+    }
     return particles;
 }
 
@@ -73,9 +76,9 @@ std::vector<sensor_msgs::LaserScan> simulate_particle_scans(geometry_msgs::PoseA
      * http://docs.ros.org/groovy/api/occupancy_grid_utils/html/namespaceoccupancy__grid__utils.html
      * Use the variable 'real_sensor_info' (already declared as global variable) for the real sensor information
      */
-     for(size_t i = 0; i < particles.poses.size(); i++){
-        simulated_scans[i] = *occupancy_grid_utils::simulateRangeScan(map, particles.poses[i], real_sensor_info);
-     }
+    for(size_t i=0;i< particles.poses.size(); i++){
+        simulated_scans[i]=*occupancy_grid_utils::simulateRangeScan(map,particles.poses[i],real_sensor_info);
+    }
     return simulated_scans;
 }
 
@@ -96,20 +99,22 @@ std::vector<float> calculate_particle_similarities(std::vector<sensor_msgs::Lase
      * IMPORTANT NOTE 2. Both, simulated an real scans, can have infinite ranges. Thus, when comparing readings,
      * ensure both simulated and real ranges are finite values. 
      */
-    double weights_sum = 0;
-    for(size_t i = 0; i < simulated_scans.size(); i++){
-        similarities[i] = 0;
-        for(size_t j=0; j < simulated_scans.ranges.size(); j++){
-            if(real_scan.ranges[j*LASER_DOWNSAMPLING] < real_scan.range_max && simulated_scans[i].ranges[j] < real_scan.range_max)
-                similarities[i] += fabs(simulated_scans[i].ranges[j] - real_scan.ranges[j * LASER_DOWNSAMPLING]);
-            else
+    double weights_sum=0;
+    for(size_t i=0; i<simulated_scans.size(); i++){
+        similarities[i]=0;
+        for(size_t j=0 ; j < simulated_scans[i].ranges.size() ; j++){
+            if(real_scan.ranges[j*LASER_DOWNSAMPLING] < real_scan.range_max 
+            && simulated_scans[i].ranges[j] < real_scan.range_max){
+                similarities[i]+=fabs(simulated_scans[i].ranges[j] - real_scan.ranges[j*LASER_DOWNSAMPLING]);
+            }else{
                 similarities[i] += real_scan.range_max;
+            }
         }
         similarities[i] /= simulated_scans[i].ranges.size();
         similarities[i] = exp(-similarities[i]*similarities[i]/SENSOR_NOISE);
-        weights_sum += similarities[i];
+        weights_sum+=similarities[i];
     }
-    for(int i = 0; i < similarities.size(); i++){
+    for(int i=0; i< similarities.size(); i++){
         similarities[i] /= weights_sum;
     }
     return similarities;
@@ -126,12 +131,12 @@ int random_choice(std::vector<float>& probabilities)
      * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
      * Return the chosen integer. 
      */
-    float beta = rnd.uniformReal(0 ,1);
-    for(int i = 0; i < probabilities.size(); i ++){
+    float beta= rnd.uniformReal(0,1);
+    for(int i=0; i < probabilities.size(); i++){
         if(beta < probabilities[i]){
             return i;
-        } else{
-            beta -= probabilities[i];
+        }else{
+            beta-=probabilities[i];
         }
     }
     return -1;
@@ -156,14 +161,14 @@ geometry_msgs::PoseArray resample_particles(geometry_msgs::PoseArray& particles,
      * given by the quaternion (0,0,sin(theta/2), cos(theta/2)), thus, you should first
      * get the corresponding angle, then add noise, and the get again the corresponding quaternion.
      */
-     for(size_t i=0; i < particles.poses.size();i++){
+    for(size_t i=0; i < particles.poses.size();i++){
         int idx = random_choice(probabilities);
         resampled_particles.poses[i].position.x = particles.poses[idx].position.x + rnd.gaussian(0,RESAMPLING_NOISE);
         resampled_particles.poses[i].position.y = particles.poses[idx].position.y + rnd.gaussian(0,RESAMPLING_NOISE);
         float angle = atan2(particles.poses[idx].orientation.z, particles.poses[idx].orientation.w)*2;
         angle += rnd.gaussian(0,RESAMPLING_NOISE);
-        resampled_particles[i].orientation.w=cos(angle/2);
-        resampled_particles[i].orientation.z=sin(angle/2);
+        resampled_particles.poses[i].orientation.w=cos(angle/2);
+        resampled_particles.poses[i].orientation.z=sin(angle/2);
     }
     return resampled_particles;
 }
@@ -180,8 +185,8 @@ void move_particles(geometry_msgs::PoseArray& particles, float delta_x, float de
      * is the orientation of the i-th particle.
      * Add gaussian noise to each new position. Use MOVEMENT_NOISE as covariances. 
      */
-    for(size_t i=0; i< particles.poses.size(); i++){
-        float a = atan2(particles.poses[i].orientation.z,particlues.poses[i].orientation.w)*2;
+     for(size_t i=0; i< particles.poses.size(); i++){
+        float a = atan2(particles.poses[i].orientation.z,particles.poses[i].orientation.w)*2;
         particles.poses[i].position.x += delta_x*cos(a) -delta_y*sin(a) +rnd.gaussian(0,MOVEMENT_NOISE);
         particles.poses[i].position.y += delta_x*sin(a) -delta_y*cos(a) +rnd.gaussian(0,MOVEMENT_NOISE);
         a += delta_t + rnd.gaussian(0,MOVEMENT_NOISE); 
@@ -340,10 +345,12 @@ int main(int argc, char** argv)
              * Get the set of similarities by calling the calculate_particle_similarities function. Assign result to 'similarities'
              * Resample particles by calling the resample_particles function
              */
+
             move_particles(particles,delta_pose.x,delta_pose.y,delta_pose.theta);
             simulated_scans = simulate_particle_scans(particles,static_map);
             particle_similarities = calculate_particle_similarities(simulated_scans,real_scan);
             particles=resample_particles(particles,particle_similarities);
+
             /*
              * END OF TODO
              */
