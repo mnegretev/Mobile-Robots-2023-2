@@ -2,3 +2,9 @@
 *.pyc
 *.user
 #*#
+<<<<<<< HEAD
+PushChanges.py
+=======
+PushChanges.py
+PullAll.py
+>>>>>>> be9d18decac5d1582f5dc81ee1e3647a9fcb4fd5
