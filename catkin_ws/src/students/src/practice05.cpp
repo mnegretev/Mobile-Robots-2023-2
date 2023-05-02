@@ -48,19 +48,16 @@ geometry_msgs::PoseArray get_initial_distribution(int N, float min_x, float max_
      * given by (0,0,sin(theta/2), cos(theta/2)). 
      */
     // fill p appropriately
-    for(size_t i=0; i < N; i++){    
-        geometry_msgs::Pose p; // one pose to put in the array
+    for(size_t i=0; i < particles.poses.size(); i++){    
+        
         // Position
-        p.position.x = rnd.uniformReal(min_x,max_x);
-        p.position.y = rnd.uniformReal(min_y,max_y);
+        particles.poses[i].position.x = rnd.uniformReal(min_x,max_x);
+        particles.poses[i].position.y = rnd.uniformReal(min_y,max_y);
         float theta = rnd.uniformReal(min_a,max_a);
         // Quaternion orientation
-        p.orientation.x = 0;
-        p.orientation.y = 0;
-        p.orientation.z = sin(theta/2);
-        p.orientation.w = cos(theta/2);
-        // add Pose to PoseArray
-        particles.poses.push_back(p);
+        particles.poses[i].orientation.z = sin(theta/2);
+        particles.poses[i].orientation.w = cos(theta/2);
+     
     }
     return particles;
 }
@@ -170,8 +167,8 @@ geometry_msgs::PoseArray resample_particles(geometry_msgs::PoseArray& particles,
         resampled_particles.poses[i].position.y = particles.poses[idx].position.y + rnd.gaussian(0,RESAMPLING_NOISE);
         float angle = atan2(particles.poses[idx].orientation.z, particles.poses[idx].orientation.w)*2;
         angle += rnd.gaussian(0,RESAMPLING_NOISE);
-        resampled_particles[i].orientation.w=cos(angle/2);
-        resampled_particles[i].orientation.z=sin(angle/2);
+        resampled_particles.poses[i].orientation.w=cos(angle/2);
+        resampled_particles.poses[i].orientation.z=sin(angle/2);
     }
     return resampled_particles;
 }
@@ -189,7 +186,7 @@ void move_particles(geometry_msgs::PoseArray& particles, float delta_x, float de
      * Add gaussian noise to each new position. Use MOVEMENT_NOISE as covariances. 
      */
      for(size_t i=0; i< particles.poses.size(); i++){
-        float a = atan2(particles.poses[i].orientation.z,particlues.poses[i].orientation.w)*2;
+        float a = atan2(particles.poses[i].orientation.z,particles.poses[i].orientation.w)*2;
         particles.poses[i].position.x += delta_x*cos(a) -delta_y*sin(a) +rnd.gaussian(0,MOVEMENT_NOISE);
         particles.poses[i].position.y += delta_x*sin(a) -delta_y*cos(a) +rnd.gaussian(0,MOVEMENT_NOISE);
         a += delta_t + rnd.gaussian(0,MOVEMENT_NOISE); 
