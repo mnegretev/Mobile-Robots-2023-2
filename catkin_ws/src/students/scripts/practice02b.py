@@ -27,7 +27,8 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map):
     # TODO:
     # Review the A* algorithm to find a path in an occupancy grid map given the start cell
     # [start_r, start_c], the goal cell [goal_r, goal_c] and the map 'grid_map'.
-    # The function returns a set of points of the form [[start_r, start_c], [r1,c1], [r2,c2], ..., [goal_r, goal_c]]
+    # The function returns a set of points of the form
+    # [[start_r, start_c], [r1,c1], [r2,c2], ..., [goal_r, goal_c]]
     # indicating the indices (cell coordinates) of the path cells.
     # If path cannot be found, function returns an empty tuple []
     #
@@ -65,6 +66,10 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map):
             #
             #g = g_values[row, col] + abs(row-r) + abs(col-c) + cost_map[r][c]
             #h = abs(goal_r - r) + abs(goal_c - c)
+<<<<<<< HEAD
+=======
+            #h = 0
+>>>>>>> be9d18decac5d1582f5dc81ee1e3647a9fcb4fd5
             g = g_values[row, col] + math.sqrt((row-r)**2 + (col - c)**2) + cost_map[r][c]
             h = math.sqrt((goal_r-r)**2 + (goal_c - c)**2)
             #

@@ -111,10 +111,17 @@ def callback_scan(msg):
     # TODO:
     # Modify the following parameters and compare the results:
     #
+<<<<<<< HEAD
     DISTANCE_THRESHOLD  = 0.02     #Distance threshold to consider a point as part of a candidate line. 
     MIN_POINTS_COUNTING = 10         #Minimum number of points a line should contain.
     RHO_TOLERANCE       = 0.0025      #RHO and THETA error tolerance to consider two lines as one.
     THETA_TOLERANCE     = 0.0025
+=======
+    DISTANCE_THRESHOLD  = 0.1     #Distance threshold to consider a point as part of a candidate line. 
+    MIN_POINTS_COUNTING = 1       #Minimum number of points a line should contain.
+    RHO_TOLERANCE       = 0.05    #RHO and THETA error tolerance to consider two lines as one.
+    THETA_TOLERANCE     = 0.05
+>>>>>>> be9d18decac5d1582f5dc81ee1e3647a9fcb4fd5
     lines = split_and_merge(points, DISTANCE_THRESHOLD, MIN_POINTS_COUNTING, RHO_TOLERANCE, THETA_TOLERANCE)
     pub_line_markers.publish(get_line_markers(lines))
     return

@@ -61,6 +61,7 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. map.
     #
+<<<<<<< HEAD
 
     dzeta = 0.8
     fatt_x, fatt_y = robot_x - goal_x, robot_y - goal_y
@@ -69,6 +70,9 @@ def attraction_force(robot_x, robot_y, goal_x, goal_y):
     force_y = fatt_y/mag if mag != 0 else fatt_y
 
     return [dzeta*force_x, dzeta*force_y]
+=======
+    return [2, 2]
+>>>>>>> be9d18decac5d1582f5dc81ee1e3647a9fcb4fd5
 
 def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     #
@@ -82,6 +86,7 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
     # where force_x and force_y are the X and Y components
     # of the resulting rejection force w.r.t. map.
     #
+<<<<<<< HEAD
 
     d0 = 0.8
     etha = 3.0
@@ -97,6 +102,10 @@ def rejection_force(robot_x, robot_y, robot_a, laser_readings):
 
 
     return [frej_x, frej_y]
+=======
+    
+    return [2, 2]
+>>>>>>> be9d18decac5d1582f5dc81ee1e3647a9fcb4fd5
 
 def callback_pot_fields_goal(msg):
     goal_x = msg.pose.position.x

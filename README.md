@@ -40,7 +40,7 @@ Y una GUI como la siguiente:
 
 ## Máquina virtual
 
-Se puede descargar una máquina virtual para [VirtualBox](https://www.virtualbox.org/wiki/Downloads) con Ubuntu y ROs ya instalado de [esta dirección.](https://drive.google.com/drive/folders/1DYhmegVFEz7VA69uncpYsL8Ck0HbaIEz?usp=sharing) <br>
+Se puede descargar una máquina virtual para [VirtualBox](https://www.virtualbox.org/wiki/Downloads) con Ubuntu y ROs ya instalado de [esta dirección.](https://drive.google.com/drive/folders/1T-gDsEb5Opl4gbx2qPQYEelyPnEe91Yk?usp=share_link) <br>
 Sólo es necesario  descomprimir el archivo y seguir las instrucciones del video que está en esa misma carpeta. La máquina virtual ya tiene todo instalado por lo que se puede pasar directo a la sección de pruebas.<br> 
 Se recomienda configurar la máquina virtual con 4 CPUs y 4GB de RAM.<br>
 Usuario: student <br>
