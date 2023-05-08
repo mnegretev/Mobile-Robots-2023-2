@@ -17,7 +17,7 @@
 #include "geometry_msgs/Pose2D.h"
 #include "tf/transform_broadcaster.h"
 
-#define NOMBRE "APELLIDO_PATERNO_APELLIDO_MATERNO"
+#define NOMBRE "Farfán Canales"
 
 #define LASER_DOWNSAMPLING  10
 #define SENSOR_NOISE        0.1
