@@ -76,6 +76,7 @@ std::vector<sensor_msgs::LaserScan> simulate_particle_scans(geometry_msgs::PoseA
      */
      for (size_t i=0; i < particles.poses.size();i++){
      	simulated_scans[i] = *occupancy_grid_utils::simulateRangeScan(map, particles.poses[i], real_sensor_info);
+     }
     
     return simulated_scans;
 }
