@@ -11,11 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-<<<<<<< HEAD
-   <string>Mobile Robots - Eduardo Arguelles Braulio</string>
-=======
    <string>Mobile Robots - Argüelles Braulio Eduardo</string>
->>>>>>> 1b18b0b6eb321882239382cb4762c423754fe0df
   </property>
   <property name="styleSheet">
    <string notr="true">QGroupBox {
