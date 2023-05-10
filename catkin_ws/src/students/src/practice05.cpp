@@ -17,7 +17,7 @@
 #include "geometry_msgs/Pose2D.h"
 #include "tf/transform_broadcaster.h"
 
-#define NOMBRE "Vaquero Barajas Alexis"
+#define NOMBRE "ABRAHAM VALDERRABANO VEGA"
 
 #define LASER_DOWNSAMPLING  10
 #define SENSOR_NOISE        0.1
@@ -29,8 +29,7 @@
 sensor_msgs::LaserScan real_sensor_info;
 sensor_msgs::LaserScan real_scan;
 
-geometry_msgs::PoseArray get_initial_distribution(int N, float min_x, float max_x, float min_y, float max_y, float min_a, float max_a)
-{
+geometry_msgs::PoseArray get_initial_distribution(int N, float min_x, float max_x, float min_y, float max_y, float min_a, float max_a){
     random_numbers::RandomNumberGenerator rnd;
     geometry_msgs::PoseArray particles;
     particles.poses.resize(N);
