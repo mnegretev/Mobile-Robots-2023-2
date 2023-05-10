@@ -61,7 +61,7 @@ geometry_msgs::PoseArray get_initial_distribution(int N, float min_x, float max_
 }
 
 std::vector<sensor_msgs::LaserScan> simulate_particle_scans(geometry_msgs::PoseArray& particles, nav_msgs::OccupancyGrid& map)
-{
+ 
     std::vector<sensor_msgs::LaserScan> simulated_scans;
     simulated_scans.resize(particles.poses.size());
     /*
@@ -74,14 +74,15 @@ std::vector<sensor_msgs::LaserScan> simulate_particle_scans(geometry_msgs::PoseA
      * http://docs.ros.org/groovy/api/occupancy_grid_utils/html/namespaceoccupancy__grid__utils.html
      * Use the variable 'real_sensor_info' (already declared as global variable) for the real sensor information
      */
-      for(size_t i=0;i< particles.poses.size(); i++){
+      for(size_t i=0;i< particles.poses.size(); i++)
+    {
         simulated_scans[i]=*occupancy_grid_utils::simulateRangeScan(map,particles.poses[i],real_sensor_info);
-}
+    }
     return simulated_scans;
-}
+
 
 std::vector<float> calculate_particle_similarities(std::vector<sensor_msgs::LaserScan>& simulated_scans, sensor_msgs::LaserScan& real_scan)
-{
+
     std::vector<float> similarities;
     similarities.resize(simulated_scans.size());
     /*
@@ -116,10 +117,10 @@ std::vector<float> calculate_particle_similarities(std::vector<sensor_msgs::Lase
         similarities[i] /= weights_sum;
     }
     return similarities;
-}
+
 
 int random_choice(std::vector<float>& probabilities)
-{
+
     random_numbers::RandomNumberGenerator rnd;
     
     /*
@@ -139,7 +140,7 @@ int random_choice(std::vector<float>& probabilities)
     }
     return -1;
     
-}
+
 
 geometry_msgs::PoseArray resample_particles(geometry_msgs::PoseArray& particles, std::vector<float>& probabilities)
 {
