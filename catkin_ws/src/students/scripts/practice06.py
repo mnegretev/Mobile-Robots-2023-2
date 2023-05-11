@@ -18,7 +18,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from custom_msgs.srv import FindObject, FindObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "RAYGOZA PÉREZ"
 
 def segment_by_color(img_bgr, points, obj_name):
     #
@@ -40,7 +40,36 @@ def segment_by_color(img_bgr, points, obj_name):
     #   where img_x, img_y are the center of the object in image coordinates and
     #   centroid_x, y, z are the center of the object in cartesian coordinates. 
     #
-    return [0,0,0,0,0]
+    
+    lower = [25, 50, 50] if obj_name == "pringles" else [10, 200, 50] #Limite inferior
+    upper = [35, 255, 255] if obj_name == "pringles" else [20, 255, 255] #Limite superior
+    lower = numpy.asarray(lower)
+    upper = numpy.asarray(upper)
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV) #Tranf. imagen BGR a HSV
+    img_hsv = cv2.inRange(img_hsv, lower, upper) 
+    pixeles = cv2.findNonZero(img_hsv) #Arreglo de pixeles en el intervalo de color
+    mean_img = cv2.mean(pixeles)
+    
+    x, y, z = 0, 0, 0
+    counter = 0
+    
+    #Nube de puntos
+    for [[c, r]] in pixeles:
+    	x = x + points[r, c][0]
+    	y = y + points[r, c][1]
+    	z = z + points[r, c][2]
+    	counter += 1
+
+    #Centro del objeto en coordenadas cartesianas
+    centroid_x = x/counter
+    centroid_y = y/counter
+    centroid_z = z/counter
+    
+    #Centro del objeto en coordenadas 2D
+    img_x = mean_img[0]
+    img_y = mean_img[1]
+    
+    return [img_x, img_y, centroid_x, centroid_y, centroid_z]
 
 def callback_find_object(req):
     global pub_point, img_bgr
