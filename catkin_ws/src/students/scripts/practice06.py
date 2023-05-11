@@ -46,7 +46,13 @@ def segment_by_color(img_bgr, points, obj_name):
     upper = numpy.asarray(upper)
     img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
     img_bin = cv2.inRange(img_hsv, lower, upper)
+    
+    erosion_size = 3 
+    erosion_shape = cv2.MORPH_ELLIPSE  
+    element = cv2.getStructuringElement(erosion_shape, (2 * erosion_size + 1, 2 * erosion_size + 1)) 
+    img_bin = cv2.dilate(cv2.erode(img_bin, element),element)
     cv2.imshow("bin", img_bin)
+    
     idx = cv2.findNonZero(img_bin)
     mean_img = cv2.mean(idx)
     print(mean_img)
