@@ -40,7 +40,26 @@ def segment_by_color(img_bgr, points, obj_name):
     #   where img_x, img_y are the center of the object in image coordinates and
     #   centroid_x, y, z are the center of the object in cartesian coordinates. 
     #
-    return [0,0,0,0,0]
+    lower=[25,50,50] if obj_name=="pringles" else [10,200,255]
+    upper=[35,255,255] if obj_name=="pringles" else [20,200,255]
+    lower=numpy.asarray(lower)
+    upper=numpy.asarray(upper)
+    img_hsv=cv2.cvtColor(img_brg,cv2.COLOR_BGRH2HSV)
+    img_bin=cv2.inRange(img_hsv,lower,upper)
+    cv2.imshow("bin",img_bin)
+    idx=cv2.findNonZero(img_bin)
+    xt,yt,zt=0,0,0
+    conde=0
+    for[[c,r]] in idx:
+        xt,yt,zt=xt+points[r,c][0],yt+points[r,c][1],zt+points[r,c][2]
+        conde +=1
+    xt,yt,zt=xt/conde,yt/conde,zt/conde   
+    print([xt,yt,zt])
+    
+    return [0,0,xt,yt,zt]
+
+
+
 
 def callback_find_object(req):
     global pub_point, img_bgr
