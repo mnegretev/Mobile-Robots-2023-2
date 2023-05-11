@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - UNAM, FI, 2023-2
-# PRACTICE 10 - INVERSE KINEMATICS
+# PRACTICE 07 - INVERSE KINEMATICS
 #
 # Instructions:
 # Calculate the inverse kinematics for both manipulators (left and right) given the
@@ -94,7 +94,7 @@ def jacobian(q, Ti, Wi):
     
     return J
 
-def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi):
+def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])  # Desired configuration
     tolerance = 0.01
     max_iterations = 20
@@ -108,7 +108,7 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi):
     # Use the Newton-Raphson method for root finding. (Find the roots of equation FK(q) - pd = 0)
     # You can do the following steps:
     #
-    #    Set an initial guess for joints 'q'. Suggested: [-0.5, 0.6, 0.3, 2.0, 0.3, 0.2, 0.3]
+    #    Set an initial guess for joints 'q'.
     #    Calculate Forward Kinematics 'p' by calling the corresponding function
     #    Calcualte error = p - pd
     #    Ensure orientation angles of error are in [-pi,pi]
@@ -127,8 +127,9 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi):
 def callback_la_ik_for_pose(req):
     global transforms, joints
     Ti = transforms['left']                               
-    Wi = [joints['left'][i].axis for i in range(len(joints['left']))]  
-    q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi)
+    Wi = [joints['left'][i].axis for i in range(len(joints['left']))]
+    initial_guess = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray).data
+    q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi,initial_guess)
     if q is None:
         return None
     resp = InverseKinematicsResponse()
@@ -138,8 +139,9 @@ def callback_la_ik_for_pose(req):
 def callback_ra_ik_for_pose(req):
     global transforms, joints
     Ti = transforms['right']                               
-    Wi = [joints['right'][i].axis for i in range(len(joints['right']))]  
-    q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi)
+    Wi = [joints['right'][i].axis for i in range(len(joints['right']))]
+    initial_guess = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray).data
+    q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi, initial_guess)
     if q is None:
         return False
     resp = InverseKinematicsResponse()
@@ -165,7 +167,7 @@ def callback_ra_fk(req):
     return resp
 
 def main():
-    print("PRACTICE 10" + NAME)
+    print("PRACTICE 07" + NAME)
     rospy.init_node("ik_geometric")
     get_model_info()
     rospy.Service("/manipulation/la_inverse_kinematics", InverseKinematics, callback_la_ik_for_pose)
