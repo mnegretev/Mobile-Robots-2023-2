@@ -18,7 +18,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from custom_msgs.srv import FindObject, FindObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "LÓPEZ HERNÁNDEZ EMANUEL"
 
 def segment_by_color(img_bgr, points, obj_name):
     #
@@ -39,8 +39,47 @@ def segment_by_color(img_bgr, points, obj_name):
     # - Return a tuple of the form: [img_x, img_y, centroid_x, centroid_y, centroid_z]
     #   where img_x, img_y are the center of the object in image coordinates and
     #   centroid_x, y, z are the center of the object in cartesian coordinates. 
-    #
-    return [0,0,0,0,0]
+    #	Declaración de arreglos
+    lower = []
+    upper = []
+    #Se cambia el espacio de color de RGB a HSV
+    img_bgr = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+
+    #Se asignan limites de colores para los dos objetos
+    if obj_name == 'pringles':
+     lower = [25,50,50]
+     upper = [35,255,255]
+    if obj_name == 'drink':
+     lower = [10,200,50]
+     upper = [20,255,255]
+
+    lower = numpy.asarray(lower)
+    upper = numpy.asarray(upper)
+    #Se obtienen los pixeles que se encuentran dentro del rango de colores
+    img_bgr = cv2.inRange(img_bgr, lower, upper)
+    #Se obtienen los pixeles que son diferentes de cero
+    nonZero_pixels = cv2.findNonZero(img_bgr)
+    #Se obtiene la media de los pixeles para obtene el centroide en coordenadas de imagen
+    centroid_pixels = cv2.mean(nonZero_pixels)
+
+    #Se calcula el centroide en coordenadas cartesianas obteniendo el promedio
+    #de los pixeles que son diferentes de cero utilizando la nube de puntos
+    x,y,z = 0,0,0
+    for p in nonZero_pixels:
+        [[column,row]] = p
+        if math.isnan(points[row,column][0]) or math.isnan(points[row,column][1]) or math.isnan(points[row,column][2]):
+            pass
+        else:
+            x = x + points[row,column][0]
+            y = y + points[row,column][1]
+            z = z + points[row,column][2]
+
+    x = x/len(nonZero_pixels)
+    y = y/len(nonZero_pixels)
+    z = z/len(nonZero_pixels)
+
+    #Se devuelve el centroide en coordenadas de imagen y coordenadas cartesianas
+    return [centroid_pixels[0],centroid_pixels[1],x,y,z]
 
 def callback_find_object(req):
     global pub_point, img_bgr
