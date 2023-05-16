@@ -1,11 +1,12 @@
+#!/usr/bin/env python3
+#
 # MOBILE ROBOTS - FI-UNAM, 2023-2
 # PRACTICE 06 - COLOR SEGMENTATION
-
-
+#
 # Instructions:
 # Complete the code to estimate the position of an object 
 # given a colored point cloud using color segmentation.
-
+#
 
 import numpy
 import cv2
@@ -17,7 +18,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from custom_msgs.srv import FindObject, FindObjectResponse
 
-NAME = "Ceballos Ricardo Fernando"
+NAME = "CEBALLOS RICARDO FERNANDO"
 
 def segment_by_color(img_bgr, points, obj_name):
     #
@@ -38,13 +39,12 @@ def segment_by_color(img_bgr, points, obj_name):
     # - Return a tuple of the form: [img_x, img_y, centroid_x, centroid_y, centroid_z]
     #   where img_x, img_y are the center of the object in image coordinates and
     #   centroid_x, y, z are the center of the object in cartesian coordinates. 
-    #
-    #lower = [25,50,50] if obj_name == "pringles" else [30,50,50]
-    #upper = [35,255,255] if obj_name == "pringles" else [28,96,165]
+    #	Declaración de arreglos
     lower = []
     upper = []
     #Se cambia el espacio de color de RGB a HSV
     img_bgr = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+
     #Se asignan limites de colores para los dos objetos
     if obj_name == 'pringles':
      lower = [25,50,50]
@@ -55,15 +55,15 @@ def segment_by_color(img_bgr, points, obj_name):
 
     lower = numpy.asarray(lower)
     upper = numpy.asarray(upper)
-  
+    #Se obtienen los pixeles que se encuentran dentro del rango de colores
     img_bgr = cv2.inRange(img_bgr, lower, upper)
-    
+    #Se obtienen los pixeles que son diferentes de cero
     nonZero_pixels = cv2.findNonZero(img_bgr)
-    
-    
+    #Se obtiene la media de los pixeles para obtene el centroide en coordenadas de imagen
     centroid_pixels = cv2.mean(nonZero_pixels)
 
-    
+    #Se calcula el centroide en coordenadas cartesianas obteniendo el promedio
+    #de los pixeles que son diferentes de cero utilizando la nube de puntos
     x,y,z = 0,0,0
     for p in nonZero_pixels:
         [[column,row]] = p
@@ -80,7 +80,6 @@ def segment_by_color(img_bgr, points, obj_name):
 
     #Se devuelve el centroide en coordenadas de imagen y coordenadas cartesianas
     return [centroid_pixels[0],centroid_pixels[1],x,y,z]
-
 
 def callback_find_object(req):
     global pub_point, img_bgr
@@ -116,3 +115,4 @@ if __name__ == '__main__':
         main()
     except rospy.ROSInterruptException:
         pass
+
