@@ -144,8 +144,13 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
         error= p - pd
         error[3:6] = (error[3:6] +math.pi)%(2*math.pi)-math.pi 
         iterations+=1
+    if iterations < max_iterations:
+        print("Inverse Kinematics .-> IK solved after "+ str(iterations)+ " iterations:")
+        return q
+    else:
+        print("InverseKinematics.->Cannot solve IK. Max attempst exceeded.")
+        return None
 
-    return q
 
 def callback_la_ik_for_pose(req):
     global transforms, joints
