@@ -18,7 +18,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from custom_msgs.srv import FindObject, FindObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "Hernandez Ramirez Luisa"
 
 def segment_by_color(img_bgr, points, obj_name):
     #
@@ -40,7 +40,44 @@ def segment_by_color(img_bgr, points, obj_name):
     #   where img_x, img_y are the center of the object in image coordinates and
     #   centroid_x, y, z are the center of the object in cartesian coordinates. 
     #
-    return [0,0,0,0,0]
+
+    
+    #Limites de colores para los dos objetos
+    lower = [25,50,  50] if obj_name == "pringles" else [10,200,50]
+    upper = [35,255,255] if obj_name == "pringles" else [20,255,255]
+    
+
+    lower = numpy.asarray(lower)
+    upper = numpy.asarray(upper)
+
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    #Pixeles que se encuentran dentro del rango de colores
+    img_bin = cv2.inRange(img_hsv, lower, upper)
+
+    cv2.imshow("bin",img_bin)
+    #Pixeles que son diferentes de cero
+    idx = cv2.findNonZero(img_bin)
+
+    mean_img = cv2.mean(idx)
+    print(mean_img)
+
+    
+    xt, yt, zt = 0,0,0
+    counter = 0
+    for [[column,row]] in idx:
+            xt = xt + points[row,column][0]
+            yt = yt + points[row,column][1]
+            zt = zt + points[row,column][2]
+            counter += 1
+
+    xt = xt/counter
+    yt = yt/counter
+    zt = zt/counter
+    print([xt, yt, zt])
+
+
+    #Se devuelve el centroide en coordenadas de imagen y coordenadas cartesianas
+    return [mean_img[0], mean_img[1], xt, yt, zt]
 
 def callback_find_object(req):
     global pub_point, img_bgr
