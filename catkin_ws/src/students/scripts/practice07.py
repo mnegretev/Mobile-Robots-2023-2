@@ -102,7 +102,7 @@ def jacobian(q, Ti, Wi):
     qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
     qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
     for i in range(len(q)):
-        J[:,i] =(forward_kinematics(qn[i],Ti,Wi) - forward_kinematics(qp[i],Ti,Wi))/delta_q/2.0  #completar
+        J[:,i] =(forward_kinematics(qn[i],Ti,Wi) - forward_kinematics(qp[i],Ti,Wi))/delta_q/2.0  
     return J
 
 def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
