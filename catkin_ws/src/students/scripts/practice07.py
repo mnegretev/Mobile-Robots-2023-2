@@ -63,7 +63,7 @@ def forward_kinematics(q, Ti, Wi):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
-    H=tft.identity_matrix
+    H=tft.identity_matrix()
     for i in range(len(q)):
         H=tft.concatenate_matrices(H,Ti[i], tft.rotation_matrix(q[i],Wi[i]))
     H=tft.concatenate_matrices(H,Ti[7])
