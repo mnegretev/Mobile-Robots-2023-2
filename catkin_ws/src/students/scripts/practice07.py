@@ -19,7 +19,7 @@ import urdf_parser_py.urdf
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
 
-NAME = "FULL_NAME"
+NAME = "LÓPEZ HERNÁNDEZ EMANUEL"
 
 def get_model_info():
     global joints, transforms
@@ -63,9 +63,15 @@ def forward_kinematics(q, Ti, Wi):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
-    x,y,z,R,P,Y = 0,0,0,0,0,0
+    H = tft.identity_matrix()
+    for i in range(len(q)):
+     H = tft.concatenate_matrices(H, Ti[i], tft.rotation_matrix(q[i], Wi[i]))
+    H = tft.concatenate_matrices(H, Ti[7])
+    x,y,z = H[0,3], H[1,3], H[2,3]
+    R,P,Y = list(tft.euler_from_matrix(H))
+    #x,y,z,R,P,Y = 0,0,0,0,0,0
     return numpy.asarray([x,y,z,R,P,Y])
-
+    
 def jacobian(q, Ti, Wi):
     delta_q = 0.000001
     #
@@ -91,7 +97,12 @@ def jacobian(q, Ti, Wi):
     #     RETURN J
     #     
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])            # J 6x7 full of zeros
-    
+    q_next = numpy.asarray([q,] * len(q) + ( delta_q * numpy.identity(len(q)) ))
+    q_prev = numpy.asarray([q,] * len(q) - ( delta_q * numpy.identity(len(q)) ))
+    for i in range(len(q)):
+     J[:,i] = (forward_kinematics(q_next[i,:], Ti, Wi) - forward_kinematics(q_prev[i,:], Ti, Wi)) / (2 * delta_q)
+    print("Se calcula el jacobiano")
+    print(J)
     return J
 
 def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
@@ -122,7 +133,31 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
     #    Return calculated q if maximum iterations were not exceeded
     #    Otherwise, return None
     #
-    return None
+    print("PointBreak")
+    q = [-0.5, 0.6, 0.3, 2.0, 0.3, 0.2, 0.3]
+    p = forward_kinematics(q, Ti, Wi)
+    err = p - pd
+    #Asegurar que los angulos de orientacion se encuentran entre [-pi,pi]
+    #Los angulos se encuentran en err[3:6] -> roll, pitch, yaw
+    err[3:6] = (err[3:6] + math.pi) % (2 * math.pi) - math.pi
+    print("PointBreak2")
+    while(numpy.linalg.norm(err) > tolerance and iterations < max_iterations):
+     #Calculo de Jacobiano
+     J = jacobian(q, Ti, Wi)
+     #Actualizar estimacion de q con la matriz pseudoinversa de J
+     q = q - (numpy.dot(numpy.linalg.pinv(J), err))
+     #Se asegura que los angulos q se encuentren entre [-pi, pi]
+     q = (q + math.pi) % (2 * math.pi) - math.pi
+     #Se recalculan las FK
+     p = forward_kinematics(q, Ti, Wi)
+     #Se recalcula el error y se asegura que los angulos se encuentren entre [-pi, pi]
+     err = p - pd
+     err[3:6] = (err[3:6] + math.pi) % (2 * math.pi) - math.pi
+     #Se incrementan las iteraciones
+     iterations += 1
+    print("PointBreakTerminaIK")
+    #Se devuelve q en caso de que no se excedan las max_iteraciones, caso contrario no se devuelve nada
+    return q if iterations < max_iterations else None
 
 def callback_la_ik_for_pose(req):
     global transforms, joints
