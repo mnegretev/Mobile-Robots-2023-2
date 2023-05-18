@@ -18,6 +18,7 @@ import numpy
 import urdf_parser_py.urdf
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
+from std_msgs.msg import Float64MultiArray
 
 NAME = "RAYGOZA PEREZ"
 
@@ -150,7 +151,7 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
         error = p - pd
         error[3:6] = (error[3:6] + math.pi)%(2*math.pi) - math.pi
         iterations += 1
-        
+
     if iterations < max_iterations: 
         return  q 
     else:
