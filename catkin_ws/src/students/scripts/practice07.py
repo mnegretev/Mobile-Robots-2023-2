@@ -150,7 +150,11 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
         error = p - pd
         error[3:6] = (error[3:6] + math.pi)%(2*math.pi) - math.pi
         iterations += 1
-    return  q 
+        
+    if iterations < max_iterations: 
+        return  q 
+    else:
+        return None
 
 def callback_la_ik_for_pose(req):
     global transforms, joints
