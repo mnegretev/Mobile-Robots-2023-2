@@ -40,36 +40,35 @@ def segment_by_color(img_bgr, points, obj_name):
     #   where img_x, img_y are the center of the object in image coordinates and
     #   centroid_x, y, z are the center of the object in cartesian coordinates. 
     #
-    color_inf= [25,50,50] if obj_name == 'pringles' else [12,180,140]
-    color_sup= [35,255,255] if obj_name == 'pringles' else [16,220,210]
-    color_inf = numpy.asarray(color_inf)
-    color_sup = numpy.asarray(color_sup)
-
-    img_blur=cv2.GaussianBlur(img_bgr,(5,5),0) # suavizado 
-    img_hsv = cv2.cvtColor(img_blur,cv2.COLOR_BGR2HSV)  # BGR a HSV
-    img_bin = cv2.inRange(img_hsv,color_inf,color_sup) #imagen segmentada
-
-    # Eliminacion de outliers con erosion y dilatacion
-    kernel = numpy.ones((5, 5), numpy.uint8)
-    img_erosion = cv2.erode(img_bin, kernel, iterations=1)
-    img_dilation = cv2.dilate(img_erosion, kernel, iterations=1)
-
-    idx = cv2.findNonZero(img_dilation) # indices de segmentacion
-
-    mean_img = cv2.mean(idx) #Promedio de imagen
-
-    xt,yt,zt=0,0,0
-    counter=0
-    # Promedio de posicion en 3D
-    for [[c,r]] in idx:
-        xt,yt,zt = xt+points[r,c][0], yt+points[r,c][1],zt+points[r,c][2]
-        counter+=1
-    xt,yt,zt = xt/counter,yt/counter,zt/counter
-
+    lower = [25, 50, 50] if obj_name == "pringles" else [10, 200, 50]
+    upper = [35, 255, 255] if obj_name == "pringles" else [20, 255, 255]
+    lower = numpy.asarray(lower)
+    upper = numpy.asarray(upper)
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    img_bin = cv2.inRange(img_hsv, lower, upper)
+    
+    erosion_size = 3 
+    erosion_shape = cv2.MORPH_ELLIPSE  
+    element = cv2.getStructuringElement(erosion_shape, (2 * erosion_size + 1, 2 * erosion_size + 1)) 
+    img_bin = cv2.dilate(cv2.erode(img_bin, element),element)
+    cv2.imshow("bin", img_bin)
+    
+    idx = cv2.findNonZero(img_bin)
+    mean_img = cv2.mean(idx)
     print(mean_img)
-    print([xt,yt,zt])
+    
+    xt=0
+    yt=0
+    zt=0
+    counter = 0
+    for [[c,r]] in idx:
+    	xt,yt,zt=xt+points[r,c][0], yt+points[r,c][1], zt+points[r,c][2]
+    	counter+=1
 
-    return [int(mean_img[0]),int(mean_img[1]),xt,yt,zt]
+    xt,yt,zt=xt/counter, yt/counter, zt/counter
+    print([xt,yt,zt])
+    return [mean_img[0],mean_img[1],xt,yt,zt]
+
     
 
 def callback_find_object(req):
