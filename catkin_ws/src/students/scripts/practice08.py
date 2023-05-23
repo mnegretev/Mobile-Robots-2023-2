@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - UNAM, FI, 2023-2
-# PRACTICE 12 - TRAINING A NEURAL NETWORK
+# PRACTICE 08 - TRAINING A NEURAL NETWORK
 #
 # Instructions:
 # Complete the code to train a neural network for
@@ -21,7 +21,7 @@ class NeuralNetwork(object):
         #
         # The list 'layers' indicates the number of neurons in each layer.
         # Remember that the first layer indicates the dimension of the inputs and thus,
-        # there is no bias vector fot the first layer.
+        # there is no bias vector for the first layer.
         # For this practice, 'layers' should be something like [784, n2, n3, ..., nl, 10]
         # All weights and biases are initialized with random values. In each layer we have a matrix
         # of weights where row j contains all the weights of the j-th neuron in that layer. For this example,
@@ -135,8 +135,8 @@ def load_dataset(folder):
     return list(zip(training_dataset, training_labels)), list(zip(testing_dataset, testing_labels))
 
 def main():
-    print("PRACTICE 10 - " + NAME)
-    rospy.init_node("practice10")
+    print("PRACTICE 08 - " + NAME)
+    rospy.init_node("practice08")
     rospack = rospkg.RosPack()
     dataset_folder = rospack.get_path("config_files") + "/handwritten_digits/"
     epochs        = 3
