@@ -19,7 +19,7 @@ import urdf_parser_py.urdf
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
 
-NAME = "FULL_NAME"
+NAME = "Gómez Serna Carlos David"
 
 def get_model_info():
     global joints, transforms
@@ -89,9 +89,16 @@ def jacobian(q, Ti, Wi):
     #     FOR i = 1,..,7:
     #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
     #     RETURN J
-    #     
+    # 
+    print("PointBreak4")
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])            # J 6x7 full of zeros
-    
+        for i in range(len(q)):
+
+     J[:,i] = (forward_kinematics(q_next[i,:], Ti, Wi) - forward_kinematics(q_prev[i,:], Ti, Wi)) / (2 * delta_q)
+
+    print("Se calcula el jacobiano")
+
+    print(J)
     return J
 
 def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
@@ -121,7 +128,36 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
     #        Increment iterations
     #    Return calculated q if maximum iterations were not exceeded
     #    Otherwise, return None
-    #
+    #Jacobiano
+     J = jacobian(q, Ti, Wi)
+
+    
+
+     q = q - (numpy.dot(numpy.linalg.pinv(J), err))
+
+     
+
+     q = (q + math.pi) % (2 * math.pi) - math.pi
+
+    
+
+     p = forward_kinematics(q, Ti, Wi)
+
+     
+
+     err = p - pd
+
+     err[3:6] = (err[3:6] + math.pi) % (2 * math.pi) - math.pi
+
+     
+
+     iterations += 1
+
+    print("PointBreakTerminaIK")
+
+    
+
+    return q if iterations < max_iterations else None
     return None
 
 def callback_la_ik_for_pose(req):
