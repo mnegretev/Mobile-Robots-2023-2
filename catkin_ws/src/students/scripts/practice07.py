@@ -150,7 +150,7 @@ def callback_la_ik_for_pose(req):
     global transforms, joints
     Ti = transforms['left']                               
     Wi = [joints['left'][i].axis for i in range(len(joints['left']))]
-    initial_guess = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray).data
+    initial_guess = rospy.wait_for_message("/hardware/left_arm/current_pose", Float64MultiArray).data
     q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi,initial_guess)
     if q is None:
         return None
