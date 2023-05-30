@@ -21,6 +21,7 @@ from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
 from std_msgs.msg import Float64MultiArray
 
+
 NAME = "RIOS RIVERA OMAR"
 
 def get_model_info():
@@ -102,7 +103,7 @@ def jacobian(q, Ti, Wi):
     qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
     qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
     for i in range(len(q)):
-        J[:,i] = (forward_kinematics(qn[i], Ti, Wi) - forward_kinematics(qp[i], Ti, Wi))/(2*delta_q)
+        J[:,i] = (forward_kinematics(qn[i,:], Ti, Wi) - forward_kinematics(qp[i,:], Ti, Wi))/(2*delta_q)
     return J
 
 def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
@@ -144,11 +145,12 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
         err = p - pd
         err[3:6] = (err[3:6] + math.pi)%(2*math.pi) - math.pi
         iterations += 1
-    if iterations == max_iterations:
+    if iterations < max_iterations:
+        print('Convergence reached') 
+        return q
+    else:
         print('Max iterations reached') 
         return None
-    print('Convergence reached') 
-    return q
 
 def callback_la_ik_for_pose(req):
     global transforms, joints
