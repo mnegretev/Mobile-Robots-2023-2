@@ -16,11 +16,11 @@ import tf
 import tf.transformations as tft
 import numpy
 import urdf_parser_py.urdf
+from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
-from std_msgs.msg import Float64MultiArray
 
-NAME = "Paula Carmona Ponce"
+NAME = "FULL_NAME"
 
 def get_model_info():
     global joints, transforms
@@ -64,14 +64,13 @@ def forward_kinematics(q, Ti, Wi):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
-    H = tft.identity_matrix()
+    H  = tft.identity_matrix()
     for i in range(len(q)):
-        H = tft.concatenate_matrices(H, Ti[i], tft.rotation_matrix(q[i], Wi[i]))
-    H = tft.concatenate_matrices(H, Ti[7])
-    x,y,z = H[0,3], H[1,3], H[2,3]
-    R,P,Y = list(tft.euler_from_matrix(H))
+        H  = tft.concatenate_matrices(H, Ti[i], tft.rotation_matrix(q[i], Wi[i]))
+    H  = tft.concatenate_matrices(H, Ti[7])
+    x,y,z = H[0,3], H[1,3], H[2,3]          # Get xyz from resulting H
+    R,P,Y = list(tft.euler_from_matrix(H))  # Get RPY from resulting H
     return numpy.asarray([x,y,z,R,P,Y])
-
 
 def jacobian(q, Ti, Wi):
     delta_q = 0.000001
@@ -98,10 +97,10 @@ def jacobian(q, Ti, Wi):
     #     RETURN J
     #     
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])            # J 6x7 full of zeros
-    qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
-    qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
+    qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))   # q_next
+    qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))   # q_prev
     for i in range(len(q)):
-        J[:,i] = (forward_kinematics(qn[i, :], Ti, Wi) - forward_kinematics(qp[i, :], Ti, Wi))/(2*delta_q)    
+        J[:,i] = (forward_kinematics(qn[i], Ti, Wi) - forward_kinematics(qp[i], Ti, Wi))/delta_q/2.0
     return J
 
 def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi, initial_guess=[0,0,0,0,0,0,0]):
@@ -118,7 +117,7 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi, initial_guess=[
     # Use the Newton-Raphson method for root finding. (Find the roots of equation FK(q) - pd = 0)
     # You can do the following steps:
     #
-    #    Set an initial guess for joints 'q'.
+    #    Set an initial guess for joints 'q'. Suggested: [-0.5, 0.6, 0.3, 2.0, 0.3, 0.2, 0.3]
     #    Calculate Forward Kinematics 'p' by calling the corresponding function
     #    Calcualte error = p - pd
     #    Ensure orientation angles of error are in [-pi,pi]
@@ -132,29 +131,26 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi, initial_guess=[
     #    Return calculated q if maximum iterations were not exceeded
     #    Otherwise, return None
     #
-    q = numpy.asarray(initial_guess)
+    q = numpy.asarray(initial_guess)  # Initial guess
     p = forward_kinematics(q, Ti, Wi)
-    err = p-pd
+    err = p - pd
     err[3:6] = (err[3:6] + math.pi)%(2*math.pi) - math.pi
     while numpy.linalg.norm(err) > tolerance and iterations < max_iterations:
         J = jacobian(q, Ti, Wi)
         q = (q - numpy.dot(numpy.linalg.pinv(J), err) + math.pi)%(2*math.pi) - math.pi
         p = forward_kinematics(q, Ti, Wi)
-        error = p - pd
+        err = p - pd
         err[3:6] = (err[3:6] + math.pi)%(2*math.pi) - math.pi
-        iterations += 1
-
-    if iterations < max_iterations: 
-        return  q 
-    else:
-        return None
-
+        iterations +=1
+    print("InverseKinematics.->IK solved after " + str(iterations) + " iterations: " + str(q))
+    return q
+    
 def callback_la_ik_for_pose(req):
     global transforms, joints
     Ti = transforms['left']                               
     Wi = [joints['left'][i].axis for i in range(len(joints['left']))]
     initial_guess = rospy.wait_for_message("/hardware/left_arm/current_pose", Float64MultiArray).data
-    q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi,initial_guess)
+    q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi, initial_guess)
     if q is None:
         return None
     resp = InverseKinematicsResponse()
