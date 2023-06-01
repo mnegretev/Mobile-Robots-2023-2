@@ -37,6 +37,7 @@ NAME = "RIOS RIVERA OMAR"
 def callback_recognized_speech(msg):
     global recognized_speech, new_task, executing_task
     recognized_speech = msg.hypothesis[0]
+    new_task = True
     print("New command received: " + recognized_speech)
 
 #
@@ -243,22 +244,27 @@ def main():
     while not rospy.is_shutdown():
         if state == "SM_INIT":
             print("Final proyect. Waiting for task...")
+            say("Waiting")
             state = "SM_WAIT_TASK"
+            
 
         elif state == "SM_WAIT_TASK":
             if(new_task):
                 obj,loc = parse_command(recognized_speech)
                 print("New task received. Requested object: " + obj+ " Requested lcoation: " + str(loc))
+                say("Task received")
                 state = "SM_MOVE_HEAD"
 
         elif state == "SM_MOVE_HEAD":
             print("Moving head")
-            move_head(0,-1)
+            say("Moving head")
+            move_head(0,-1.0)
 
         else:
             print("Error in SM")
             break;
-    loop.sleep()
+        
+        loop.sleep()
 
 if __name__ == '__main__':
     try:
