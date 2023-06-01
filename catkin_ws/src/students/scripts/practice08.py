@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "RAYGOZA PEREZ"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -50,7 +50,12 @@ class NeuralNetwork(object):
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
-        y = []
+        y = [x]
+
+        for i in range(len(self.biases)):
+            z = numpy.dot(self.weights[i], x) + self.biases[i]
+            x = 1.0 / (1.0 + numpy.exp(-z))
+            y.append(x)
         return y
 
     def backpropagate(self, x, yt):
@@ -74,6 +79,15 @@ class NeuralNetwork(object):
         #     nabla_b[-l] = delta
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
+        
+        delta = (y[-1] - yt)*y[-1]*(1 - y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = delta*y[-2].transpose()
+
+        for i in range(2, self.num_layers):
+            delta = numpy.dot(numpy.transpose(self.weights[-i + 1]), delta)*y[-i]*(1 - y[-i])
+            nabla_b[-i] = delta
+            nabla_w[-i] = numpy.dot(delta,numpy.transpose(y[-i - 1]))
 
         return nabla_w, nabla_b
 
@@ -139,7 +153,7 @@ def main():
     rospy.init_node("practice08")
     rospack = rospkg.RosPack()
     dataset_folder = rospack.get_path("config_files") + "/handwritten_digits/"
-    epochs        = 3
+    epochs        = 50
     batch_size    = 10
     learning_rate = 3.0
     
