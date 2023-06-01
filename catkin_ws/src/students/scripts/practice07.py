@@ -9,7 +9,9 @@
 # the Newton-Raphson method for root finding.
 # Modify only sections marked with the 'TODO' comment
 # Left arm IK coordenates (prepare): -0.06 0.02 -0.337 0.6 -1.46 -0.78
+# Left arm IK coordenates (home): 0.004 0 -.739 0 -.016 0
 # Right arm IK coordenates (prepare): 0.007 -0.02 -0.393 -0.26 -1.212 0.449
+# Right arm IK coordenates (home): -.007 0 -.674 0 .028 .001
 
 import math
 import rospy
@@ -147,7 +149,9 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
         iterations += 1
     if iterations < max_iterations:
         print('Convergence reached') 
+        print(q)
         return q
+
     else:
         print('Max iterations reached') 
         return None
