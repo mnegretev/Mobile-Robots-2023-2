@@ -19,7 +19,7 @@ import urdf_parser_py.urdf
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
 
-NAME = "VALDERRABANO VEHA ABRAHAM"
+NAME = "VALDERRABANO VEGA ABRAHAM"
 
 def get_model_info():
     global joints, transforms
