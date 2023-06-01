@@ -29,7 +29,7 @@ from sound_play.msg import SoundRequest
 from custom_msgs.srv import *
 from custom_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "RIOS RIVERA OMAR"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -238,9 +238,27 @@ def main():
     #
     # FINAL PROJECT 
     #
-    
+    new_task = False
+    state = "SM_INIT"
     while not rospy.is_shutdown():
-        loop.sleep()
+        if state == "SM_INIT":
+            print("Final proyect. Waiting for task...")
+            state = "SM_WAIT_TASK"
+
+        elif state == "SM_WAIT_TASK":
+            if(new_task):
+                obj,loc = parse_command(recognized_speech)
+                print("New task received. Requested object: " + obj+ " Requested lcoation: " + str(loc))
+                state = "SM_MOVE_HEAD"
+
+        elif state == "SM_MOVE_HEAD":
+            print("Moving head")
+            move_head(0,-1)
+
+        else:
+            print("Error in SM")
+            break;
+    loop.sleep()
 
 if __name__ == '__main__':
     try:
