@@ -18,7 +18,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from custom_msgs.srv import FindObject, FindObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "Aguilera Valderrama Alexis Fernando"
 
 def segment_by_color(img_bgr, points, obj_name):
     #
@@ -40,7 +40,36 @@ def segment_by_color(img_bgr, points, obj_name):
     #   where img_x, img_y are the center of the object in image coordinates and
     #   centroid_x, y, z are the center of the object in cartesian coordinates. 
     #
-    return [0,0,0,0,0]
+    color_inf= [25,50,50] if obj_name == 'pringles' else [12,180,140]
+    color_sup= [35,255,255] if obj_name == 'pringles' else [16,220,210]
+    color_inf = numpy.asarray(color_inf)
+    color_sup = numpy.asarray(color_sup)
+
+    #Reducir ruido suvizando la imagen 
+    img_blur=cv2.GaussianBlur(img_bgr,(5,5),0) # suavizado 
+    img_hsv = cv2.cvtColor(img_blur,cv2.COLOR_BGR2HSV)  # BGR a HSV
+    img_bin = cv2.inRange(img_hsv,color_inf,color_sup) #obtener la segmentacion
+    
+    #quitar punto atipicos con erosion y maximizar el area con dilatacion
+    kernel = numpy.ones((5, 5), numpy.uint8)
+    img_erosion = cv2.erode(img_bin, kernel, iterations=1)
+    img_dilation = cv2.dilate(img_erosion, kernel, iterations=1)
+
+    idx = cv2.findNonZero(img_dilation) # obtener los pixeles
+    
+    mean_img = cv2.mean(idx) #obtener centroide de los puntos en la imagen
+   
+    xt,yt,zt=0,0,0
+    counter=0
+    #obtener el centroide de los puntos en espacio 3d
+    for [[c,r]] in idx:
+        xt,yt,zt = xt+points[r,c][0], yt+points[r,c][1],zt+points[r,c][2]
+        counter+=1
+    xt,yt,zt = xt/counter,yt/counter,zt/counter 
+    print(mean_img)
+    print([xt,yt,zt])
+
+    return [int(mean_img[0]),int(mean_img[1]),xt,yt,zt]
 
 def callback_find_object(req):
     global pub_point, img_bgr

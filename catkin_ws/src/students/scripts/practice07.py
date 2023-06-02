@@ -19,7 +19,7 @@ import urdf_parser_py.urdf
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
 
-NAME = "FULL_NAME"
+NAME = "Aguilera Valderrama Alexis Fernando"
 
 def get_model_info():
     global joints, transforms
@@ -64,6 +64,14 @@ def forward_kinematics(q, Ti, Wi):
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
     x,y,z,R,P,Y = 0,0,0,0,0,0
+    
+    H =tft.identity_matrix()
+    for i in range(len(q)):
+        H=tft.concatenate_matrices(H,Ti[i],tft.rotation_matrix(q[i],Wi[i]))
+    H=tft.concatenate_matrices(H,Ti[7]) #get transition
+    x,y,z=H[0,3],H[1,3],H[2,3]          #get xyz from resulting
+    R,P,Y=list(tft.euler_from_matrix(H)) #get rpy from resulting
+    
     return numpy.asarray([x,y,z,R,P,Y])
 
 def jacobian(q, Ti, Wi):
@@ -91,6 +99,11 @@ def jacobian(q, Ti, Wi):
     #     RETURN J
     #     
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])            # J 6x7 full of zeros
+    
+    qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
+    qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
+    for i in range(len(q)):
+        J[:,i] =(forward_kinematics(qn[i],Ti,Wi) - forward_kinematics(qp[i],Ti,Wi))/delta_q/2.0  
     
     return J
 
@@ -122,7 +135,24 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
     #    Return calculated q if maximum iterations were not exceeded
     #    Otherwise, return None
     #
-    return None
+    
+    q = numpy.asarray(initial_guess) #initial guess
+    p = forward_kinematics(q,Ti,Wi)
+    error= p - pd
+    error[3:6] = (error[3:6] +math.pi)%(2*math.pi)-math.pi #-pi a pi para mantener angulo
+    while numpy.linalg.norm(error) > tolerance and iterations < max_iterations:
+        J = jacobian(q,Ti,Wi)
+        q = ( q - numpy.dot(numpy.linalg.pinv(J),error) + math.pi )%(2*math.pi)-math.pi
+        p = forward_kinematics(q,Ti,Wi)
+        error= p - pd
+        error[3:6] = (error[3:6] +math.pi)%(2*math.pi)-math.pi 
+        iterations+=1
+    if iterations < max_iterations:
+        print("Inverse Kinematics .-> IK solved after "+ str(iterations)+ " iterations:")
+        return q
+    else:
+        print("InverseKinematics.->Cannot solve IK. Max attempst exceeded.")
+        return None
 
 def callback_la_ik_for_pose(req):
     global transforms, joints
