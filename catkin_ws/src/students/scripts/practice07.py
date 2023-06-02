@@ -8,7 +8,10 @@
 # URDF descriptions and a desired configuration. Solve the inverse kinematics using
 # the Newton-Raphson method for root finding.
 # Modify only sections marked with the 'TODO' comment
-#
+#IK la home 0.003 0 -0.739 0 -0.015 0
+#IK la prepare -0.063 0.020 -0.337 0.603 -1.460 -0.779
+#IK ra home -0.002 0 -0.674 0 0.009 0 
+#IK ra prepare 0.007 -0.020 -0.393 -0.270 -1.211 0.449
 
 import math
 import rospy
@@ -136,7 +139,7 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi, initial_guess=[
     p = forward_kinematics(q, Ti, Wi)
     err = p-pd
     err[3:6] = (err[3:6] + math.pi)%(2*math.pi) - math.pi
-    while numpy.linalg.norm(err) > tolerance and iterations < max_iterations:
+    while numpy.linalg.norm(err) > tolerance and iterations <= max_iterations:
         J = jacobian(q, Ti, Wi)
         q = (q - numpy.dot(numpy.linalg.pinv(J), err) + math.pi)%(2*math.pi) - math.pi
         p = forward_kinematics(q, Ti, Wi)
@@ -145,6 +148,8 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi, initial_guess=[
         iterations += 1
 
     if iterations < max_iterations: 
+        print(q)
+        print ("Convergence reached")
         return  q 
     else:
         return None
