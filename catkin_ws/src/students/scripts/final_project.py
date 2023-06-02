@@ -29,7 +29,7 @@ from sound_play.msg import SoundRequest
 from custom_msgs.srv import *
 from custom_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "CARMONA PONCE PAULA"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -38,6 +38,7 @@ def callback_recognized_speech(msg):
     global recognized_speech, new_task, executing_task
     recognized_speech = msg.hypothesis[0]
     print("New command received: " + recognized_speech)
+    new_task = True
 
 #
 # Global variable 'goal_reached' is set True when the last sent navigation goal is reached
@@ -238,8 +239,23 @@ def main():
     #
     # FINAL PROJECT 
     #
-    
+    new_task =  False
+    state = "SM_INIT"
     while not rospy.is_shutdown():
+        if state == "SM_INIT"
+            print("Starting final project. Waiting for new task")
+            state = "SM_WAIT_TASK"
+
+        elif state == "SM_WAIT_TASK"
+            if (new_task):
+                print("New task received")
+                say("Task received")
+                time.sleep(2.0)
+                state = "SM_MOVE_HEAD"
+        elif state == "SM_MOVE_HEAD"
+            
+
+
         loop.sleep()
 
 if __name__ == '__main__':
