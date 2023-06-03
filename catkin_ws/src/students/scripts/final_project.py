@@ -29,7 +29,7 @@ from sound_play.msg import SoundRequest
 from custom_msgs.srv import *
 from custom_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "Vaquero Barajas Alexis"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -129,6 +129,7 @@ def move_base(linear, angular, t):
     pubCmdVel.publish(cmd)
     time.sleep(t)
     pubCmdVel.publish(Twist())
+    time.sleep(2.0)
 
 #
 # This function publishes a global goal position. This topic is subscribed by
@@ -154,12 +155,14 @@ def say(text):
     msg.arg2    = "voice_kal_diphone"
     msg.arg = text
     pubSay.publish(msg)
+    time.sleep(2.0)
 
 #
 # This function calls the service for calculating inverse kinematics for left arm (practice 08)
 # and returns the calculated articular position.
 #
 def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
+    req_ik = InverseKinematicsRequest()
     req_ik.x = x
     req_ik.y = y
     req_ik.z = z
@@ -174,7 +177,7 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
 # This function calls the service for calculating inverse kinematics for right arm (practice 08)
 # and returns the calculated articular position.
 #
-def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
+def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik = InverseKinematicsRequest()
     req_ik.x = x
     req_ik.y = y
@@ -238,9 +241,129 @@ def main():
     #
     # FINAL PROJECT 
     #
-    
+    # Se asignan las variables para el estado inicial y una bandera
+    new_task = True
+    state = "SM_INIT"
+
     while not rospy.is_shutdown():
+        # Estado 01 - Inicio
+        if state == "SM_INIT":
+            print("RM-Final Proyect. Waiting for task...")
+            say('Waiting for ...')
+            state = "SM_WAITING_TASK"
+
+        # Estado 02 - Espera una tarea
+        elif state == "SM_WAITING_TASK":
+            if (new_task):
+                # obj, loc = parse_command(recognized_speech)
+                # print('New task received. Requested Object: {} Requested Location {}'.format(obj,str(loc)))
+                obj = "pringles"
+                # obj = "drink"
+                say("Task Received")
+                time.sleep(2.0)
+                state = "SM_MOVE_HEAD"
+        
+        # Estado 03 - Mueve la cabeza para observar la mesa
+        elif state == "SM_MOVE_HEAD":
+            print("Moving head")
+            say("Moving head")
+            move_head(0,-1.0)
+            time.sleep(2.0)
+            state = "SM_RECOGNIZE_OBJ" 
+
+        # Estado 04 -  Reconce al objecto que solicitamos
+        elif state == "SM_RECOGNIZE_OBJ":
+            print("Trying to find: {}" .format(obj))
+            say("I am looking for {}" .format(obj))
+            x,y,z = find_object(obj)
+            time.sleep(2.0)
+            print("Found object at: x - {}, y - {}, z - {}" .format(str(x),str(y),str(z)))
+            say(obj + "found")
+            state = "SM_TRANSFORM"
+
+        # Estado 05 -  Realiza la transformacion del brazo a las dimensiones del plano
+        elif state == "SM_TRANSFORM":
+            # Brazo Izquierdo
+            if obj == "pringles":
+                x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_left_link")
+                time.sleep(2.0)
+                print("Coordinates referenced to left shoulder")
+                say(obj+"Coordinates transformed")
+                time.sleep(2.0)
+            
+            # Si el objeto es drink
+            else:
+            # Brazo Derecho
+                x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_right_link")
+                time.sleep(2.0)
+                print("Coordinates referenced to right shoulder")
+                say(obj+"coordinates transformed")
+                time.sleep(2.0)
+            
+            print("Object transfered coordinates at: x - {}, y - {}, z - {}" .format(str(x),str(y),str(z)))
+            state = "SM_PREPARE_TAKE"
+
+        # Estado 06 - Se prepara para tomar el objeto con el brazo izq o der 
+        elif state == "SM_PREPARE_TAKE":
+            say("Prepare take {} ".format(obj))
+            print("Preparing to take {}".format(obj))
+            # move_base(-2,0,1)
+            if obj == "pringles":
+                # -0.45 q1 , grip 2 , q4 = 3
+                move_left_arm(-0.6,0.0,-0.03,3.0,0.0,0.0,0.0)
+                time.sleep(2.0)
+                move_left_gripper(2.0)
+                time.sleep(2.0)
+                move_left_arm(-0.06,0.0,-0.03,1.8,0.0,0.0,0.0)
+                
+            else:
+                move_right_arm(-0.931,-0.189,0.014,1.346,0.821,0.035,0.003)
+                time.sleep(2.0)
+                move_right_gripper(0.4)
+            
+            # move_base(2,0,1)
+            state = "SM_TAKE_OBJ"
+
+        # Estado 07 - Se toma el objeto usando la cinematica inversa
+        elif state == "SM_TAKE_OBJ":
+            say("Take {}".format(obj))
+            print("Calculating inverse kinemtics")
+            if obj == "pringles":
+                # grip -0 ; q6 = 1
+                # -------------------- 
+                q=calculate_inverse_kinematics_left(x,y,z,-0.032,-1.525,0.003)
+                move_left_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
+                time.sleep(2.0)
+                move_left_gripper(-2.3)
+                move_left_arm(-0.06,0.0,-0.03,1.8,0.0,1.0,0.0)
+                time.sleep(2.0)
+
+            else:
+                q=calculate_inverse_kinematics_right(x,y,z,-0.108,-0.987,0.303)
+                move_right_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
+                move_right_gripper(-0.4)
+
+            print(q)
+            state = "SM_MOVE_TO_POSITION"
+
+        # Estado 08 - Se mueve el robot a una posicion determinada con el objeto
+        elif state == "SM_MOVE_TO_POSITION":
+            # go_to_goal_pose(2,2)
+            # say("Moving to map position")
+            # move_base(2,0,1)
+            state = "SM_FINISHED_TASK"
+
+        # Estado 10 - Acaba la tarea
+        elif state == "SM_FINISHED_TASK":
+            say("Goodbye")
+            break
+
+        
+        else:
+            print('Error in SM. Last State: {}'.format(state))
+            break
         loop.sleep()
+
 
 if __name__ == '__main__':
     try:

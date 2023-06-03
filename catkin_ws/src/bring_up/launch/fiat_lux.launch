@@ -35,11 +35,11 @@
   <node name="audio_sender" pkg="sprec_pocketsphinx" type="send_audio.py" output="screen"/>
   <node name="sound_play" pkg="sound_play" type="soundplay_node.py" output="screen"/>
 
-  <node name="practice02"  pkg="students" type="practice02.py"  output="screen"/>
-  <node name="practice03a" pkg="students" type="practice03a.py" output="screen"/>
-  <node name="practice03b" pkg="students" type="practice03b.py" output="screen"/>
-  <node name="practice04"  pkg="students" type="practice04.py"  output="screen"/>
-  <node name="practice05"  pkg="students" type="practice05.py"  output="screen"/>
-  <node name="practice08"  pkg="students" type="practice08.py"  output="screen"/>
-  <node name="practice09"  pkg="students" type="practice09.py"  output="screen"/>
+  <node name="Map_Inflation"    pkg="students" type="practice01.py"  output="screen"/>
+  <node name="Cost_Map"         pkg="students" type="practice02a.py" output="screen"/>
+  <node name="Path_Planning"    pkg="students" type="practice02b.py" output="screen"/>
+  <node name="Control"          pkg="students" type="practice04.py"  output="screen"/>
+  <node name="Path_Smooth"      pkg="students" type="assignment06.py"  output="screen"/>
+  <node name="Color_Segment"    pkg="students" type="practice06.py"  output="screen"/>
+  <node name="Inverse_Kinetic"  pkg="students" type="practice07.py"  output="screen"/>
 </launch>
