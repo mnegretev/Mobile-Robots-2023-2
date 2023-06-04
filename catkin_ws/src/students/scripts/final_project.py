@@ -243,39 +243,39 @@ def main():
     # FINAL PROJECT 
     #
     new_task = False
-    state = "SM_INIT"
+    state = "SM_INICIO"
     while not rospy.is_shutdown():
-        if state == "SM_INIT":
+        if state == "SM_INICIO":
             print("Final proyect. Waiting for task...")
             say("Waiting")
-            state = "SM_WAIT_TASK"
+            state = "SM_ESCUCHAR"
             
 
-        elif state == "SM_WAIT_TASK":
+        elif state == "SM_ESCUCHAR":
             if(new_task):
                 obj,loc = parse_command(recognized_speech)
                 print("New task received. Requested object: " + obj+ " Requested lcoation: " + str(loc))
                 say("Task received")
                 time.sleep(2.0)
-                state = "SM_MOVE_HEAD"
+                state = "SM_TRADUCIR"
 
-        elif state == "SM_MOVE_HEAD":
+        elif state == "SM_TRADUCIR":
             print("Moving head")
             say("Moving head")
             move_head(0,-1.0)
             time.sleep(2.0)
-            state = "SM_RECOGNIZE_OBJ"
+            state = "SM_VISION"
 
-        elif state == "SM_RECOGNIZE_OBJ":
+        elif state == "SM_VISION":
             print("Trying to find: " + obj)
             say("I am looking for " + obj)
             x,y,z = find_object(obj)
             time.sleep(2.0)
             print("Found object at: x - "+ str(x) + ", y - " + str(y) + ", z - " + str(z))
             say(obj + "found")
-            state = "SM_TRANSFORM"
+            state = "SM_BRAZO"
 
-        elif state == "SM_TRANSFORM":
+        elif state == "SM_BRAZO":
             if obj == "pringles":
                 x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_left_link")
                 time.sleep(2.0)
@@ -289,9 +289,9 @@ def main():
                 say(obj+"coordinates transformed")
                 time.sleep(2.0)
             print("Object transfered coordinates at: x - "+ str(x) + ", y - " + str(y) + ", z - " + str(z))
-            state = "SM_PREPARE_TAKE"
+            state = "SM_MOVIMIENTO"
 
-        elif state == "SM_PREPARE_TAKE":
+        elif state == "SM_MOVIMIENTO":
             print("Preparing to take " + obj)
             move_base(-2,0,1)
             if obj == "pringles":
@@ -301,9 +301,9 @@ def main():
                 move_right_arm(-0.931,-0.189,0.014,1.346,0.821,0.035,0.003)
                 move_right_gripper(0.4)
             move_base(2,0,1)
-            state = "SM_TAKE_OBJ"
+            state = "SM_NAVEGACION"
 
-        elif state == "SM_TAKE_OBJ":
+        elif state == "NAVEGACION":
             print("Calculating inverse kinemtics")
             if obj == "pringles":
                 q=calculate_inverse_kinematics_left(x,y,z,0.5,-1.44,-0.67)
@@ -315,7 +315,7 @@ def main():
                 move_right_gripper(-0.4)
             
             print(q)
-            state = "SM_PREPARE_MOVE"
+            state = "SM_NAVEGACION"
 
 
         else:
