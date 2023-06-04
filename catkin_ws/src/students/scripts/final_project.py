@@ -29,7 +29,7 @@ from sound_play.msg import SoundRequest
 from custom_msgs.srv import *
 from custom_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "Aguilera Valderrama Alexis Fernando"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -37,6 +37,8 @@ NAME = "FULL NAME"
 def callback_recognized_speech(msg):
     global recognized_speech, new_task, executing_task
     recognized_speech = msg.hypothesis[0]
+    new_task = True
+    executing_task = True
     print("New command received: " + recognized_speech)
 
 #
@@ -160,6 +162,7 @@ def say(text):
 # and returns the calculated articular position.
 #
 def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
+    req_ik = InverseKinematicsRequest()
     req_ik.x = x
     req_ik.y = y
     req_ik.z = z
@@ -174,7 +177,7 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
 # This function calls the service for calculating inverse kinematics for right arm (practice 08)
 # and returns the calculated articular position.
 #
-def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
+def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik = InverseKinematicsRequest()
     req_ik.x = x
     req_ik.y = y
@@ -238,6 +241,45 @@ def main():
     #
     # FINAL PROJECT 
     #
+
+    new_task = False
+    state = "SM_INIT"
+    while not rospy.is_shutdown():
+        if state == "SM_INIT":
+            print("Starting final project. Waiting for new task")
+            state = "SM_WAITING_FOR_TASK"
+
+        elif state == "SM_WAITING_FOR_TASK":
+            if(new_task):
+                obj, loc = parse_command(recognized_speech)
+                print("New task received, Requested object: " + obj + "Request location: " + str(loc))
+                state = "SM_MOVE_HEAD"
+
+        elif state == "SM_MOVE_HEAD":
+            print("Moving Head")
+            move_head(0,-1.0)
+            state = "SM_RECOGNIZE_OBJECT"
+
+        elif state == "SM_RECOGNIZE_OBJECT":
+            print("Trying to find " + obj)
+            say("I'm looking for " + obj)
+            x,y,z = find_object(obj)
+            print("Found object at " + str([x,y,z]))
+            target_frame = "left_arm_link1" if obj == "pringles" else "right_arm_link1"
+            x,y,z = transform_point(x,y,z,"neck_link", target_frame)
+            print("coords with arm: " + str([x,y,z]))
+            state = "SM_MOVE_LEFT_ARM" if obj == "pringles" else "SM_MOVE_RIGHT_ARM"
+
+        elif state == "SM_MOVE_LEFT_ARM":
+            move_left_gripper(1)
+            q_conf = calculate_inverse_kinematics_left(x,y,z,0,0,45)
+            move_left_arm(q_conf)
+
+        elif state == "SM_MOVE_RIGHT_ARM":
+            move_right_gripper(1)
+            q_conf = calculate_inverse_kinematics_right(x,y,z,0,0,45)
+            move_right_arm(q_conf)
+    
     
     while not rospy.is_shutdown():
         loop.sleep()
