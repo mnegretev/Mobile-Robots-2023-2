@@ -17,7 +17,7 @@
 #include "geometry_msgs/Pose2D.h"
 #include "tf/transform_broadcaster.h"
 
-#define NOMBRE "Carmona Ponce"
+#define NOMBRE "Escarzaga Solis Ruben"
 
 #define LASER_DOWNSAMPLING  10
 #define SENSOR_NOISE        0.1
