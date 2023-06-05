@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "Jose Alberto Pedraza Martinez"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -50,7 +50,10 @@ class NeuralNetwork(object):
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
-        y = []
+        y = [x]
+        for i in range(len(self.biases)):
+            z = numpy.dot(self.weights[i],y[i]) + self.biases[i]
+            y.append(1.0/(1.0 + numpy.exp(-z)))
         return y
 
     def backpropagate(self, x, yt):
@@ -74,7 +77,13 @@ class NeuralNetwork(object):
         #     nabla_b[-l] = delta
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
-
+        delta=(y[-1]-yt)*y[-1]*(1 - y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = delta*y[-2].transpose()
+        for l in range(2,self.num_layers):
+            delta = numpy.dot(self.weights[-l+1].transpose(),delta)*y[-l]*(1-y[-l])    
+            nabla_b[-l]=delta
+            nabla_w[-l]=numpy.dot(delta,y[-l-1].transpose())
         return nabla_w, nabla_b
 
     def update_with_batch(self, batch, eta):
@@ -158,7 +167,7 @@ def main():
         nn = NeuralNetwork(layers, weights=saved_data['w'], biases=saved_data['b'])
         print("Loading data from previously trained model with layers " + str(layers))
     except:
-        nn = NeuralNetwork([784,30,10])
+        nn = NeuralNetwork([784,392,196,98,49,10])
         pass
     
     nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
