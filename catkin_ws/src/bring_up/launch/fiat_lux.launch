@@ -39,7 +39,7 @@
   <node name="practice02a" pkg="students" type="practice02a.py" output="screen"/>
   <node name="practice02b" pkg="students" type="practice02b.py" output="screen"/>
   <node name="practice03"  pkg="students" type="practice03.py"  output="screen"/>
-  <node name="assigment06"  pkg="students" type="assigment06.py"  output="screen"/>
+  <node name="assignment06"  pkg="students" type="assignment06.py"  output="screen"/>
   <node name="practice06"  pkg="students" type="practice06.py"  output="screen"/>
   <node name="practice07"  pkg="students" type="practice07.py"  output="screen"/>
 </launch>

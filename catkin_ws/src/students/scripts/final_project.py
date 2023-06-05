@@ -29,7 +29,7 @@ from sound_play.msg import SoundRequest
 from custom_msgs.srv import *
 from custom_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "LÓPEZ HERNÁNDEZ EMANUEL"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -174,7 +174,7 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
 # This function calls the service for calculating inverse kinematics for right arm (practice 08)
 # and returns the calculated articular position.
 #
-def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
+def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik = InverseKinematicsRequest()
     req_ik.x = x
     req_ik.y = y
@@ -238,8 +238,101 @@ def main():
     #
     # FINAL PROJECT 
     #
+    new_task = False
+    recognized_speech = ""
+    executing_task = False
+    state = "SM_INIT"
+    goal_flag = False
+    x,y,z = [0,0,0]
+    obj = ""
+    loc = []
+    move_head(0,0)
     
     while not rospy.is_shutdown():
+        if state == "SM_INIT":
+         print("Initializating final project...")
+         print("Waiting for spoken command...")
+         say("Waiting for command")
+         state = "SM_WAIT_FOR_COMMAND"
+        elif state == "SM_WAIT_FOR_COMMAND":
+         if new_task:
+          new_task = False
+          executing_task = True
+          state = "SM_PARSING"
+        elif state == "SM_PARSING":
+         obj, loc = parse_command(recognized_speech)
+         print("Requested object: " + obj)
+         print("Requested location " + str(loc))
+         say("I need to find the " + obj)
+         state = "SM_MOVE_HEAD"
+        elif state == "SM_MOVE_HEAD":
+         move_head(0,-1)
+         if obj == "pringles":
+          state = "SM_PREPARE_LEFT_ARM"
+         else:
+          state = "SM_PREPARE_RIGHT_ARM"
+        elif state == "SM_PREPARE_LEFT_ARM":
+         move_left_arm(-1.3,0.2,0.0,2.1,0.0,1.6,0.0)
+         x,y,z = find_object(obj)
+         x,y,z = transform_point(x,y,z,"realsense_link","shoulders_left_link")
+         state = "SM_OPEN_LEFT_GRIPPER"
+         say("I found the " + obj)
+        elif state == "SM_PREPARE_RIGHT_ARM":
+         move_right_arm(-1.4,-0.2,0.0,1.4,2.3,0.0,0.0)
+         x,y,z = find_object(obj)
+         x,y,z = transform_point(x,y,z,"realsense_link","shoulders_right_link")
+         state = "SM_OPEN_RIGHT_GRIPPER"
+         say("I found the " + obj)
+        elif state == "SM_OPEN_LEFT_GRIPPER":
+         move_left_gripper(0.5)
+         state = "SM_MOVE_LEFT_ARM"
+        elif state == "SM_OPEN_RIGHT_GRIPPER":
+         move_right_gripper(0.5)
+         state = "SM_MOVE_RIGHT_ARM"
+        elif state == "SM_MOVE_LEFT_ARM":
+         move_base(0.8,0,1.5)
+         q1,q2,q3,q4,q5,q6,q7 = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
+         move_left_arm(q1,q2,q3,q4,q5,q6,q7)
+         state = "SM_CLOSE_LEFT_GRIPPER"
+        elif state == "SM_MOVE_RIGHT_ARM":
+         move_base(1,0,2)
+         q1,q2,q3,q4,q5,q6,q7 = calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
+         move_right_arm(q1,q2,q3,q4,q5,q6,q7)
+         state = "SM_CLOSE_RIGHT_GRIPPER"
+        elif state == "SM_CLOSE_LEFT_GRIPPER":
+         move_left_gripper(-0.5)
+         state = "SM_RETURN_LEFT_ARM"
+        elif state == "SM_CLOSE_RIGHT_GRIPPER":
+         move_right_gripper(-0.5)
+         state = "SM_RETURN_RIGHT_ARM"
+        elif state == "SM_RETURN_LEFT_ARM":
+         move_left_arm(-1.3,0.2,0,1.6,0,1.2,0)
+         state = "SM_MOVE_BASE_BACK"
+        elif state == "SM_RETURN_RIGHT_ARM":
+         move_right_arm(-1,-0.2,0,1.8,1.1,0.2,0)
+         state = "SM_MOVE_BASE_BACK"
+        elif state == "SM_MOVE_BASE_BACK":
+         say("Moving to the location")
+         move_base(-1, 0, 6)
+         state = "SM_GOTO_LOCATION"
+        elif state == "SM_GOTO_LOCATION":
+         go_to_goal_pose(3.22, 9.72)
+         state = "SM_WAIT_FOR_GOAL_REACH"
+        elif state == "SM_WAIT_FOR_GOAL_REACH":
+         if goal_flag:
+          state = "SM_DROP_OBJECT"
+        elif state == "SM_DROP_OBJECT":
+         if obj == "pringles":
+          move_left_gripper(0.5)
+         else:
+          move_right_gripper(0.5)
+         state = "SM_END"
+         say("I delivered the " + obj)
+        elif state == "SM_END":
+         print("CIRCUIT FINISHED SUCCESSFULLY")
+        else:
+         print("FATAL ERROR!!!")
+         
         loop.sleep()
 
 if __name__ == '__main__':
