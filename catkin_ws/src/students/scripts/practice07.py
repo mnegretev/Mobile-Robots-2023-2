@@ -18,6 +18,7 @@ import numpy
 import urdf_parser_py.urdf
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
+from std_msgs.msg import String, Float64MultiArray, Float64, Bool
 
 NAME = "Jose Alberto Pedraza Martinez"
 
@@ -63,7 +64,7 @@ def forward_kinematics(q, Ti, Wi):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
-   H = tft.identity_matrix()
+    H = tft.identity_matrix()
     for i in range(len(q)):
         H = tft.concatenate_matrices(H, Ti[i], tft.rotation_matrix(q[i], Wi[i]))
     H = tft.concatenate_matrices(H , Ti[7])
@@ -106,7 +107,7 @@ def jacobian(q, Ti, Wi):
 def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])  # Desired configuration
     tolerance = 0.01
-    max_iterations = 20
+    max_iterations = 40
     iterations = 0
     #
     # TODO:
@@ -131,7 +132,7 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
     #    Return calculated q if maximum iterations were not exceeded
     #    Otherwise, return None
     #
-    q = numpy.copy(current_left_q)
+    q = [-0.5, 0.6, 0.3, 2.0, 0.3, 0.2, 0.3]
     p = forward_kinematics(q,Ti,Wi)
     error = p - pd
     error[3:] = (error[3:] + math.pi)%(2*math.pi) - math.pi
