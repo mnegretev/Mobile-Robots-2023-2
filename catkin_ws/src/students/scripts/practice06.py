@@ -17,6 +17,7 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from custom_msgs.srv import FindObject, FindObjectResponse
+from std_msgs.msg import Float32MultiArray
 
 NAME = "Aguilera Valderrama Alexis Fernando"
 

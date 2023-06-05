@@ -168,7 +168,6 @@
         izz="0.003075"/>
     </inertial>
   </link>
-  
   <link name="left_arm_link6">
     <visual>
       <origin xyz="0 0 -0.042" rpy = "0 0 0"/>
@@ -192,7 +191,6 @@
         izz="0.003075"/>
     </inertial>
   </link>
-  
   <link name="left_arm_link7">
     <visual>
       <origin xyz="-0.01 0 -0.03" rpy = "0 0 0"/>
