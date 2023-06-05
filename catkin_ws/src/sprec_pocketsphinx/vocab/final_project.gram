@@ -1,5 +1,7 @@
 #JSGF V1.0;
-grammar final_project_gram;
+grammar final_project_gram; 
+#asi estaba
+#grammar final_project;
 
 public <simple_command> = ROBOT TAKE THE <object> TO THE <location>;
 
