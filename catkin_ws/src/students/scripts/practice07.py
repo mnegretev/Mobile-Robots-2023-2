@@ -108,7 +108,7 @@ def jacobian(q, Ti, Wi):
 def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])  # Desired configuration
     tolerance = 0.01
-    max_iterations = 20
+    max_iterations = 30
     iterations = 0
     #
     # TODO:

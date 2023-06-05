@@ -29,7 +29,7 @@ from sound_play.msg import SoundRequest
 from custom_msgs.srv import *
 from custom_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "Brayan Alexis Martinez Vázquez"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -38,6 +38,7 @@ def callback_recognized_speech(msg):
     global recognized_speech, new_task, executing_task
     recognized_speech = msg.hypothesis[0]
     print("New command received: " + recognized_speech)
+    new_task=True
 
 #
 # Global variable 'goal_reached' is set True when the last sent navigation goal is reached
@@ -49,8 +50,9 @@ def callback_goal_reached(msg):
 
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.0,8.5] if "TABLE" in cmd else [3.22, 9.72]
-    return obj, loc
+    loc = [8.41,8.47] if "TABLE" in cmd else [1.96, 9.54]
+    place = "table" if "TABLE" in cmd else "kitchen"
+    return obj, loc, place
 
 #
 # This function sends the goal articular position to the left arm and sleeps 2 seconds
@@ -121,15 +123,16 @@ def move_head(pan, tilt):
 # low-level movements. The mobile base will move at the given linear-angular speeds
 # during a time given by 't'
 #
-def move_base(linear, angular, t):
+def move_base(linear_x,linear_y, angular, t):
     global pubCmdVel
     cmd = Twist()
-    cmd.linear.x = linear
+    cmd.linear.x = linear_x
+    cmd.linear.y = linear_y
     cmd.angular.z = angular
     pubCmdVel.publish(cmd)
     time.sleep(t)
     pubCmdVel.publish(Twist())
-
+    time.sleep(2.0)
 #
 # This function publishes a global goal position. This topic is subscribed by
 # pratice04 and performs path planning and tracking.
@@ -154,12 +157,13 @@ def say(text):
     msg.arg2    = "voice_kal_diphone"
     msg.arg = text
     pubSay.publish(msg)
-
+    time.sleep(2.0)
 #
 # This function calls the service for calculating inverse kinematics for left arm (practice 08)
 # and returns the calculated articular position.
 #
 def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
+    req_ik = InverseKinematicsRequest()
     req_ik.x = x
     req_ik.y = y
     req_ik.z = z
@@ -174,7 +178,7 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
 # This function calls the service for calculating inverse kinematics for right arm (practice 08)
 # and returns the calculated articular position.
 #
-def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
+def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik = InverseKinematicsRequest()
     req_ik.x = x
     req_ik.y = y
@@ -233,13 +237,128 @@ def main():
     rospy.wait_for_service('/manipulation/la_inverse_kinematics')
     rospy.wait_for_service('/manipulation/ra_inverse_kinematics')
     rospy.wait_for_service('/vision/find_object')
-    print("Services are now available.")
+    print("--------------Services are now available.-----------")
 
     #
     # FINAL PROJECT 
     #
-    
+    goal_reached=False
+    new_task=False
+    executing_task=False
+    state="SM_INIT"
     while not rospy.is_shutdown():
+        if state == "SM_INIT":
+            print("Final proyect. Waiting for task...")
+            say("I am ready")
+            state = "SM_WAIT_TASK"
+            
+
+        elif state == "SM_WAIT_TASK":
+            if(new_task):
+                obj,loc,place = parse_command(recognized_speech)
+                print("New task received. Requested object: " + obj+ " Requested lcoation: " + str(loc))
+                say("Task received")
+                time.sleep(2.0)
+                state = "SM_MOVE_HEAD"
+
+        elif state == "SM_MOVE_HEAD":
+            
+            print("Moving head")
+            say("Moving head")
+            move_head(0,-1.0)
+            time.sleep(2.0)
+            state = "SM_RECOGNIZE_OBJ"
+
+        elif state == "SM_RECOGNIZE_OBJ":
+            print("Trying to find: " + obj)
+            say("I am looking for " + obj)
+            # if obj == "pringles": #moving to adapt
+            #     move_base(-2,-2,0,1)
+            x,y,z = find_object(obj)
+            time.sleep(2.0)
+            print("Found object at: x - "+ str(x) + ", y - " + str(y) + ", z - " + str(z))
+            say(obj + "found")
+            state = "SM_TRANSFORM"
+        
+        elif state == "SM_TRANSFORM":
+            
+            if obj == "pringles":
+                x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_left_link")
+                time.sleep(2.0)
+                print("Coordinates referenced to left shoulder")
+                
+            else:
+                x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_right_link")
+                time.sleep(2.0)
+                print("Coordinates referenced to right shoulder")
+                
+            print("Object transfered coordinates at: x - "+ str(x) + ", y - " + str(y) + ", z - " + str(z))
+            
+            state = "SM_PREPARE_TAKE"
+
+        elif state == "SM_PREPARE_TAKE":
+            print("Preparing to take " + obj)
+            move_base(-2,0,0,1)
+            if obj == "pringles":
+                move_left_arm(-0.3,0.193,-0.1100,2.1460,0.001,0.1400,0)
+                move_left_gripper(0.4)
+            else:
+                move_right_arm(-0.3,-0.2,-0.03,3.0,0.5,0.0,0.0)
+                move_right_gripper(0.4)
+            time.sleep(2)
+            move_base(2,0,0,1)
+            state = "SM_TAKE_OBJ"
+
+        elif state == "SM_TAKE_OBJ":
+            say("taking "+obj)
+            print("Taking "+obj)
+            if obj == "pringles":
+                q=calculate_inverse_kinematics_left(x+0.1,y,z,0.5,-1.44,-0.67)
+                move_left_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
+                move_left_gripper(-0.4)
+            else:
+                q=calculate_inverse_kinematics_right(x+0.12,y,z+0.1,-0.032,-1.525,0.2)
+                move_right_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
+                move_right_gripper(-0.4)
+            time.sleep(2)
+            print(q)
+            state = "SM_PREPARE_MOVE"
+
+        elif state == "SM_PREPARE_MOVE":
+            
+            print("Preparing to move")
+            if obj == "pringles":
+                #q=calculate_inverse_kinematics_left(x+0.1,y,z+0.2,0.5,-1.44,-0.67)
+                move_left_arm(q[0], q[1], q[2], q[3]+0.3, q[4], q[5], q[6])
+                
+            else:
+                #q=calculate_inverse_kinematics_right(x+0.12,y,z+0.3,-0.032,-1.525,0.2)
+                move_right_arm(-0.4,0,0,3,1,0,0)
+                #move_right_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
+            move_base(-2,0,0,1)
+            state = "SM_GO_PLACE"
+        elif state == "SM_GO_PLACE":
+            if not goal_reached and  not executing_task:
+                print("Going to the "+place+" in "+str(loc))
+                say("Going to the "+place)
+                go_to_goal_pose(loc[0],loc[1])
+                executing_task= True
+            elif goal_reached:
+                executing_task= False
+                state ="SM_GIVE_OBJ"
+
+        elif state == "SM_GIVE_OBJ":
+            print("Delivering the obj")
+            say("TAKE YOUR "+ obj+" CRACK")
+            if obj == "pringles":
+                move_left_gripper(0.4)
+            else:
+                move_right_gripper(0.4)
+            state="SM_FINISH"
+        else:
+            print("Error in SM. Last state: "+state)
+            break;
+
         loop.sleep()
 
 if __name__ == '__main__':
