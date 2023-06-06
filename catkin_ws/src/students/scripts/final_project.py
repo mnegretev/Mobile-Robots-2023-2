@@ -132,7 +132,8 @@ def move_base(linear, angular, t):
     pubCmdVel.publish(cmd)
     time.sleep(t)
     pubCmdVel.publish(Twist())
-
+    time.sleep(1.0)
+ 
 #
 # This function publishes a global goal position. This topic is subscribed by
 # pratice04 and performs path planning and tracking.
@@ -144,7 +145,8 @@ def go_to_goal_pose(goal_x, goal_y):
     goal_pose.pose.position.x = goal_x
     goal_pose.pose.position.y = goal_y
     pubGoalPose.publish(goal_pose)
-
+    time.sleep(1.0)
+ 
 #
 # This function sends a text to be synthetized.
 #
@@ -157,7 +159,8 @@ def say(text):
     msg.arg2    = "voice_kal_diphone"
     msg.arg = text
     pubSay.publish(msg)
-
+    time.sleep(1.0)
+ 
 #
 # This function calls the service for calculating inverse kinematics for left arm (practice 08)
 # and returns the calculated articular position.
@@ -252,11 +255,15 @@ def main():
             if(new_task):
                 obj,loc=parse_command(recognized_speech)
                 print("New task received. Requested object:"+obj+"Requested loation:"+str(loc))
+                say("Starting")
+                time.sleep(1.0)
                 state="SM_MOVE_HEAD"
 
         elif state=="SM_MOVE_HEAD":
             print("Moving head")
+            say("Moving head")
             move_head(0,-0.8)
+            time.sleep(1.0)
             state="SM_RECOGNIZE_OBJECT"
 
         elif state=="SM_RECOGNIZE_OBJECT":
@@ -264,10 +271,31 @@ def main():
             say("I am looking for "+obj)
             x,y,z=find_object(obj)
             print("Found object at: "+str([x,y,z]))
-            target_frame="shoulders_left_link" if obj=="pringles" else "shoulders_right_link"
-            x,y,z=transform_point(x,y,z,"realsense_link",taget_frame)
+            say("I found the " + obj)
+            state="SM_OBJCHOSEN"
+
+        elif state=="SM_OBJCHOSEN"
+            if obj=="pringles":
+                target_frame="shoulders_left_link"
+                x,y,z=transform_point(x,y,z,"realsense_link",target_frame)
+                print("Coords of left arm")
+                say("Preparing to move left arm")
+                time.sleep(2.0)
+            else:
+                 target_frame2="shoulders_right_link"
+                 x,y,z=transform_point(x,y,z,"realsense_link",taget_frame2)
+                 print("Coords of right arm")
+                 say("Preparing to move right arm")
+                 time.sleep(2.0)
+
+
             print("Coords wrt arm: "+str([x,y,z]))
-            state="SM_MOVE_LEFT_ARM" if obj=="pringles"else"SM_MOVE_RIGHT_ARM"
+            state="SM_MOVE_TOTAKE"
+
+        elif state=="SM_MOVE_TOTAKE"
+            move_base(-3,0,0)
+            if obj=="pringles"
+            print(":)")
 
         else:
             print("error")
