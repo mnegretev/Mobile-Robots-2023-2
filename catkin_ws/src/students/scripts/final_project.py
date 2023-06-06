@@ -326,6 +326,7 @@ def main():
             time.sleep(2.0)
             print("Found object at: x - "+ str(x) + ", y - " + str(y) + ", z - " + str(z))
             say(obj + "found")
+            time.sleep(1.0)
             state = "SM_TRANSFORM"
 
     #
@@ -335,18 +336,16 @@ def main():
             if obj == "pringles":
                 x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_left_link")
                 x = x+0.15
-                time.sleep(2.0)
                 print("Coordinates referenced to left shoulder")
                 say(obj+"coordinates transformed")
-                time.sleep(2.0)
+                time.sleep(1.0)
             else:
                 x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_right_link")
                 x = x- 0.05
                 z = z + 0.08
-                time.sleep(2.0)
                 print("Coordinates referenced to right shoulder")
                 say(obj+"coordinates transformed")
-                time.sleep(2.0)
+                time.sleep(1.0)
             print("Object transfered coordinates at: x - "+ str(x) + ", y - " + str(y) + ", z - " + str(z))
             state = "SM_TAKE_OBJ"
 
@@ -379,7 +378,6 @@ def main():
     #
         elif state == "SM_PREPARE_MOVE":
             print("Preparing to move")
-            
             if obj == "pringles":
                 time.sleep(1.0)
                 move_base(-1,0,1)
