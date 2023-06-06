@@ -293,13 +293,13 @@ def main():
             state="SM_MOVE_TOTAKE"
 
         elif state=="SM_MOVE_TOTAKE"
-            move_base(2,0.3,0)
+            move_base(-5,0.3,0)
             if obj=="pringles"
-                 move_left_arm(-1.228,0.003,-0.002,2.255,-0.003,-0.037,0.000)
+                 move_left_arm(-0.692,0.003,-0.002,2.205,-0.003,-0.046,0.000)
                  move_left-gripper(0.3)
             else:
                 move_base(-12,0,0)
-                move_right_arm(0.365,0.010,-0.107,1.1721,-0.311,-0.031,0.011)
+                move_right_arm(0.077,0.092,-0.107,1.1721,-0.311,-0.031,0.101)
                 move_right_gripper(0.3)
             
             state="ALMOST_TAKE"
@@ -308,14 +308,14 @@ def main():
              print("Calculating inverse kinematics for goal position")
              say("Calculating inverse kinematics")
                 if obj=="pringles":
-                    q=calculate_inverse_kinematics_left(x,y,z,0.45.-1.6,-0.7)
+                    q=calculate_inverse_kinematics_left(x,y,z,-3.140,-1.480,3.141)
                     move_left_arm(q[0],q[1],q[2],q[3],q[4],q[5],q[6])
-                    move_left_gripper(-0.3)
+                    move_left_gripper(-0.2)
 
                 else:
-                    q=calculate_inverse_kinematics_right(x,y,z,-0.203,-0.101,0.501)
+                    q=calculate_inverse_kinematics_right(x,y,z,-0.427,-1.225,0.734)
                     move_right_arm(q[0],q[1],q[2],q[3],q[4],q[5],q[6])
-                    move_right_gripper(-0.3)
+                    move_right_gripper(-0.2)
 
                 print(q)
                 state="MOVEMENT"
