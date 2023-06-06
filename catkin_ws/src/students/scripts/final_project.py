@@ -38,6 +38,7 @@ def callback_recognized_speech(msg):
     global recognized_speech, new_task, executing_task
     recognized_speech = msg.hypothesis[0]
     print("New command received: " + recognized_speech)
+    new_task=True
 
 #
 # Global variable 'goal_reached' is set True when the last sent navigation goal is reached
@@ -49,8 +50,9 @@ def callback_goal_reached(msg):
 
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.0,8.5] if "TABLE" in cmd else [3.22, 9.72]
-    return obj, loc
+    loc = [8.41,8.47] if "TABLE" in cmd else [1.96, 9.54]
+    place = "table" if "TABLE" in cmd else "kitchen"
+    return obj, loc, place
 
 #
 # This function sends the goal articular position to the left arm and sleeps 2 seconds
@@ -121,16 +123,16 @@ def move_head(pan, tilt):
 # low-level movements. The mobile base will move at the given linear-angular speeds
 # during a time given by 't'
 #
-def move_base(linear, angular, t):
+def move_base(linear_x,linear_y, angular, t):
     global pubCmdVel
     cmd = Twist()
-    cmd.linear.x = linear
+    cmd.linear.x = linear_x
+    cmd.linear.y = linear_y
     cmd.angular.z = angular
     pubCmdVel.publish(cmd)
     time.sleep(t)
     pubCmdVel.publish(Twist())
     time.sleep(2.0)
-
 #
 # This function publishes a global goal position. This topic is subscribed by
 # pratice04 and performs path planning and tracking.
@@ -156,7 +158,6 @@ def say(text):
     msg.arg = text
     pubSay.publish(msg)
     time.sleep(2.0)
-
 #
 # This function calls the service for calculating inverse kinematics for left arm (practice 08)
 # and returns the calculated articular position.
@@ -236,14 +237,17 @@ def main():
     rospy.wait_for_service('/manipulation/la_inverse_kinematics')
     rospy.wait_for_service('/manipulation/ra_inverse_kinematics')
     rospy.wait_for_service('/vision/find_object')
-    print("Services are now available.")
+    print("--------------Services are now available.-----------")
 
     #
     # FINAL PROJECT 
     #
+
     # Se asignan las variables para el estado inicial y una bandera
-    new_task = True
-    state = "SM_INIT"
+    goal_reached=False
+    new_task=True
+    executing_task=False
+    state="SM_INIT"
 
     while not rospy.is_shutdown():
         # Estado 01 - Inicio
@@ -255,10 +259,12 @@ def main():
         # Estado 02 - Espera una tarea
         elif state == "SM_WAITING_TASK":
             if (new_task):
-                # obj, loc = parse_command(recognized_speech)
-                # print('New task received. Requested Object: {} Requested Location {}'.format(obj,str(loc)))
-                obj = "pringles"
+                obj,loc,place = parse_command(recognized_speech)
                 # obj = "drink"
+                # loc = [1.96, 9.54]
+                # place = "kitchen"
+                print('New task received. Requested Object: {} Requested Location {}'.format(obj,str(loc)))
+
                 say("Task Received")
                 time.sleep(2.0)
                 state = "SM_MOVE_HEAD"
@@ -289,7 +295,6 @@ def main():
                 time.sleep(2.0)
                 print("Coordinates referenced to left shoulder")
                 say(obj+"Coordinates transformed")
-                time.sleep(2.0)
             
             # Si el objeto es drink
             else:
@@ -298,7 +303,6 @@ def main():
                 time.sleep(2.0)
                 print("Coordinates referenced to right shoulder")
                 say(obj+"coordinates transformed")
-                time.sleep(2.0)
             
             print("Object transfered coordinates at: x - {}, y - {}, z - {}" .format(str(x),str(y),str(z)))
             state = "SM_PREPARE_TAKE"
@@ -307,58 +311,66 @@ def main():
         elif state == "SM_PREPARE_TAKE":
             say("Prepare take {} ".format(obj))
             print("Preparing to take {}".format(obj))
-            # move_base(-2,0,1)
+            move_base(-2,0,0,1)
             if obj == "pringles":
-                # -0.45 q1 , grip 2 , q4 = 3
-                move_left_arm(-0.6,0.0,-0.03,3.0,0.0,0.0,0.0)
-                time.sleep(2.0)
-                move_left_gripper(2.0)
-                time.sleep(2.0)
-                move_left_arm(-0.06,0.0,-0.03,1.8,0.0,0.0,0.0)
-                
+                move_left_arm(-0.3,0.193,-0.1100,2.1460,0.001,0.1400,0)
+                move_left_gripper(0.4)
             else:
-                move_right_arm(-0.931,-0.189,0.014,1.346,0.821,0.035,0.003)
-                time.sleep(2.0)
+                move_right_arm(-0.3,-0.2,-0.03,3.0,0.5,0.0,0.0)
                 move_right_gripper(0.4)
-            
-            # move_base(2,0,1)
+            time.sleep(2)
+            move_base(2,0,0,1)
             state = "SM_TAKE_OBJ"
 
         # Estado 07 - Se toma el objeto usando la cinematica inversa
         elif state == "SM_TAKE_OBJ":
-            say("Take {}".format(obj))
+            say("Taking {}".format(obj))
             print("Calculating inverse kinemtics")
             if obj == "pringles":
-                # grip -0 ; q6 = 1
-                # -------------------- 
-                q=calculate_inverse_kinematics_left(x,y,z,-0.032,-1.525,0.003)
+                q=calculate_inverse_kinematics_left(x+0.1,y,z,0.5,-1.44,-0.67)
                 move_left_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
-                time.sleep(2.0)
-                move_left_gripper(-2.3)
-                move_left_arm(-0.06,0.0,-0.03,1.8,0.0,1.0,0.0)
-                time.sleep(2.0)
-
+                move_left_gripper(-0.4)
             else:
-                q=calculate_inverse_kinematics_right(x,y,z,-0.108,-0.987,0.303)
+                q=calculate_inverse_kinematics_right(x+0.12,y,z+0.1,-0.032,-1.525,0.2)
                 move_right_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
-                move_right_gripper(-0.4)
-
+                move_right_gripper(-1.0)
+            time.sleep(2)
             print(q)
-            state = "SM_MOVE_TO_POSITION"
+            state = "SM_PREPARE_MOVE"
 
-        # Estado 08 - Se mueve el robot a una posicion determinada con el objeto
-        elif state == "SM_MOVE_TO_POSITION":
-            # go_to_goal_pose(2,2)
-            # say("Moving to map position")
-            # move_base(2,0,1)
-            state = "SM_FINISHED_TASK"
+        # Estado 08 - Se prepara para moverse en el mapa
+        elif state == "SM_PREPARE_MOVE":
+            print("Preparing to move")
+            say("Preparing to move")
+            if obj == "pringles":
+                move_left_arm(q[0], q[1], q[2], q[3]+0.3, q[4], q[5], q[6])
+            else:
+                move_right_arm(-0.4,0,0,3,1,0,0)
+            move_base(-2,0,0,1)
+            state = "SM_GOING_TO_POSITION"
+
+        # Estado 09 - Se mueve el robot a una posicion determinada con el objeto 
+        elif state == "SM_GOING_TO_POSITION":
+            if not goal_reached and not executing_task:
+                print("Going to the "+place+" in "+str(loc))
+                say("Going to the "+place)
+                go_to_goal_pose(loc[0],loc[1])
+                executing_task= True
+            elif goal_reached:
+                executing_task= False
+                state = "SM_FINISHED_TASK"
 
         # Estado 10 - Acaba la tarea
         elif state == "SM_FINISHED_TASK":
-            say("Goodbye")
+            print("Delivering the obj")
+            say("TAKE YOUR "+obj)
+            if obj == "pringles":
+                move_left_gripper(0.4)
+            else:
+                move_right_gripper(0.4)
+            state="SM_INIT"
             break
 
-        
         else:
             print('Error in SM. Last State: {}'.format(state))
             break

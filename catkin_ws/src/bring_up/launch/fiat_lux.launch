@@ -38,8 +38,8 @@
   <node name="Map_Inflation"    pkg="students" type="practice01.py"  output="screen"/>
   <node name="Cost_Map"         pkg="students" type="practice02a.py" output="screen"/>
   <node name="Path_Planning"    pkg="students" type="practice02b.py" output="screen"/>
-  <node name="Control"          pkg="students" type="practice04.py"  output="screen"/>
-  <node name="Path_Smooth"      pkg="students" type="assignment06.py"  output="screen"/>
+  <node name="Control"          pkg="students" type="practice03.py"  output="screen"/>
+  <node name="Path_Smooth"      pkg="students" type="assignment06.py" output="screen"/>
   <node name="Color_Segment"    pkg="students" type="practice06.py"  output="screen"/>
   <node name="Inverse_Kinetic"  pkg="students" type="practice07.py"  output="screen"/>
 </launch>
