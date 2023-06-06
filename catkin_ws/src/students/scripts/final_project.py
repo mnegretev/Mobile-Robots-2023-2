@@ -244,7 +244,9 @@ def main():
     #
     # FINAL PROJECT 
     #
-    new_task=False
+    new_task=True
+    goal_reached=False
+    executing_task=False
     state="SM_INIT"
     while not rospy.is_shutdown():
         if state=="SM_INIT":
@@ -262,8 +264,8 @@ def main():
         elif state=="SM_MOVE_HEAD":
             print("Moving head")
             say("Moving head")
-            move_head(0,-0.8)
-            time.sleep(1.0)
+            move_head(0,-1.0)
+            time.sleep(2.0)
             state="SM_RECOGNIZE_OBJECT"
 
         elif state=="SM_RECOGNIZE_OBJECT":
@@ -319,7 +321,30 @@ def main():
 
                 print(q)
                 state="MOVEMENT"
+        elif state=="MOVEMENT"
+                print("Preparing to move")
+                say("Preparing to move")
+                if obj=="pringles"
+                    move_left_arm(q[0],q[1],q[2],q[3],q[4].q[5],q[6])
+                else:
+                    move_right_arm(-0.4,0,0,3,1,0,0)
+                move_base(-2,0,0,1)
+                state="GOING_TO"
 
+         elif state=="GOING_TO"
+                if not goal_reached and not executing_task:
+                    executing_task=True
+                elif goal_reached:
+                    executing_task=False
+                    state="FINISH"
+                    say("I have finished")
+         elif state=="FINISH"
+                if obj=="pringles":
+                    move_left_gripper(0.4)
+                else:
+                    move_right_gripper(0.4)
+                    state="SM_INIT"
+                    break
         else:
             print("error")
             break;
