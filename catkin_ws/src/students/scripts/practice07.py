@@ -1,14 +1,14 @@
-#CEBALLOS RICARDO FERNANDO
 #!/usr/bin/env python3
-
+#
 # MOBILE ROBOTS - UNAM, FI, 2023-2
 # PRACTICE 07 - INVERSE KINEMATICS
+#
 # Instructions:
 # Calculate the inverse kinematics for both manipulators (left and right) given the
 # URDF descriptions and a desired configuration. Solve the inverse kinematics using
 # the Newton-Raphson method for root finding.
 # Modify only sections marked with the 'TODO' comment
-
+#
 
 import math
 import rospy

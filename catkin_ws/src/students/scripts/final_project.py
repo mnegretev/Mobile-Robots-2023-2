@@ -1,7 +1,8 @@
-#CEBALLOS RICARDO FERNANDO
 #!/usr/bin/env python3
+#
 # MOBILE ROBOTS - FI-UNAM, 2023-2
 # FINAL PROJECT - SIMPLE SERVICE ROBOT
+# 
 # Instructions:
 # Write the code necessary to make the robot to perform the following possible commands:
 # * Robot take the <pringles|drink> to the <table|kitchen>
@@ -13,6 +14,7 @@
 # for example: I'm going to grab..., I'm going to navigate to ..., I arrived to..., etc.
 # Publishers and suscribers to interact with the subsystems (navigation,
 # vision, manipulation, speech synthesis and recognition) are already declared. 
+#
 
 
 import rospy
