@@ -50,7 +50,7 @@ def callback_goal_reached(msg):
 
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.41,8.47] if "TABLE" in cmd else [1.96, 9.54]
+    loc = [8.7,8.47] if "TABLE" in cmd else [2, 8.9]
     place = "table" if "TABLE" in cmd else "kitchen"
     return obj, loc, place
 
@@ -242,15 +242,21 @@ def main():
     #
     # FINAL PROJECT 
     #
+    pringles_pos = [3.25, 5.90]
+    drink_pos = [3.25, 5.90]
     goal_reached=False
     new_task=False
     executing_task=False
+    object_found = False
     state="SM_INIT"
     while not rospy.is_shutdown():
         if state == "SM_INIT":
             print("Final proyect. Waiting for task...")
             say("I am ready")
             state = "SM_WAIT_TASK"
+            goal_reached=False
+            new_task=False
+            executing_task=False
             
 
         elif state == "SM_WAIT_TASK":
@@ -259,10 +265,27 @@ def main():
                 print("New task received. Requested object: " + obj+ " Requested lcoation: " + str(loc))
                 say("Task received")
                 time.sleep(2.0)
+                if pringles_pos == [3.25, 5.90] and drink_pos == [3.25, 5.90]:
+                    state = "SM_MOVE_HEAD"
+                else:   
+                    state = "SM_MOVE_TO_OBJECTS"
+
+        elif state == "SM_MOVE_TO_OBJECTS":
+            temp_loc = loc
+            if obj == "pringles":
+                temp_loc = pringles_pos
+            else:
+                temp_loc = drink_pos
+            #print("Going to the " + obj)
+            #say("Going to the " + obj)
+            if not goal_reached:
+                go_to_goal_pose(temp_loc[0], temp_loc[1])
+            elif goal_reached:
+                goal_reached = True
                 state = "SM_MOVE_HEAD"
 
         elif state == "SM_MOVE_HEAD":
-            
+            goal_reached=False
             print("Moving head")
             say("Moving head")
             move_head(0,-1.0)
@@ -272,8 +295,7 @@ def main():
         elif state == "SM_RECOGNIZE_OBJ":
             print("Trying to find: " + obj)
             say("I am looking for " + obj)
-            # if obj == "pringles": #moving to adapt
-            #     move_base(-2,-2,0,1)
+            
             x,y,z = find_object(obj)
             time.sleep(2.0)
             print("Found object at: x - "+ str(x) + ", y - " + str(y) + ", z - " + str(z))
@@ -328,13 +350,11 @@ def main():
             
             print("Preparing to move")
             if obj == "pringles":
-                #q=calculate_inverse_kinematics_left(x+0.1,y,z+0.2,0.5,-1.44,-0.67)
+
                 move_left_arm(q[0], q[1], q[2], q[3]+0.3, q[4], q[5], q[6])
                 
             else:
-                #q=calculate_inverse_kinematics_right(x+0.12,y,z+0.3,-0.032,-1.525,0.2)
                 move_right_arm(-0.4,0,0,3,1,0,0)
-                #move_right_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
             move_base(-2,0,0,1)
             state = "SM_GO_PLACE"
         elif state == "SM_GO_PLACE":
@@ -345,6 +365,7 @@ def main():
                 executing_task= True
             elif goal_reached:
                 executing_task= False
+
                 state ="SM_GIVE_OBJ"
 
         elif state == "SM_GIVE_OBJ":
@@ -352,8 +373,10 @@ def main():
             say("TAKE YOUR "+ obj+" CRACK")
             if obj == "pringles":
                 move_left_gripper(0.4)
+                pringles_pos = loc 
             else:
                 move_right_gripper(0.4)
+                drink_pos = loc
             state="SM_INIT"
         else:
             print("Error in SM. Last state: "+state)
