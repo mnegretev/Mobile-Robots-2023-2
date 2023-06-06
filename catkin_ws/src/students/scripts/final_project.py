@@ -260,7 +260,15 @@ def main():
             print("Trying to find" + obj)
             say("I am looking for " + obj)
             x,y,z=find_object(obj)
-            
+            print("Found object at " + str([x,y,z]))
+            target_frame = "shoulders_left_link " if obj== "pringles" else "shoulders_right_link"
+            x,y,z = transform_point(x,y,z, "realsense_link", target_frame)
+            print("Coords wrt arm: " + str([x,y,z]))
+            state = "SM_MOVE_LEFT_ARM" if obj == "pringles" else "SM_MOVE_RIGHT_ARM"
+
+        else:
+            print("Somebody cannot program correctly")
+            break
 
 
 
