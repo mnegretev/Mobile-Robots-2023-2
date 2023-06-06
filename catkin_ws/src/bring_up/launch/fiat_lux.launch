@@ -38,8 +38,8 @@
   <node name="MAPS"		  pkg="students" type="practice01.py"  output="screen"/>
   <node name="COST_MAP"		  pkg="students" type="practice02a.py" output="screen"/>
   <node name="PATH_PLANNING"	  pkg="students" type="practice02b.py" output="screen"/>
-  <node name="PATH_FOLLOWING"  	  pkg="students" type="practice03.py"  output="screen"/>
-  <node name="COLOR_SEGMENTATION" pkg="students" type="assignment06.py"  output="screen"/>
-  <node name="INVERSE_KINEMATICS" pkg="students" type="practice06.py"  output="screen"/>
-  <node name="AUDIO"  	  	  pkg="students" type="practice07.py"  output="screen"/>
+  <node name="CONTROL"  	  pkg="students" type="practice03.py"  output="screen"/>
+  <node name="PATH_SMOOTH"	  pkg="students" type="assignment06.py"  output="screen"/>
+  <node name="COLOR"		  pkg="students" type="practice06.py"  output="screen"/>
+  <node name="INVERSE_KINEMATICS" pkg="students" type="practice07.py"  output="screen"/>
 </launch>
