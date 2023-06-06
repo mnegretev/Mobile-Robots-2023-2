@@ -50,7 +50,7 @@ def callback_goal_reached(msg):
 
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.41,8.47] if "TABLE" in cmd else [4.96, 9.54]
+    loc = [8.41,8.47] if "TABLE" in cmd else [1.96, 9.54]
     place = "table" if "TABLE" in cmd else "kitchen"
     return obj, loc, place
 
@@ -272,6 +272,8 @@ def main():
         elif state == "SM_RECOGNIZE_OBJ":
             print("Trying to find: " + obj)
             say("I am looking for " + obj)
+            # if obj == "pringles": #moving to adapt
+            #     move_base(-2,-2,0,1)
             x,y,z = find_object(obj)
             time.sleep(2.0)
             print("Found object at: x - "+ str(x) + ", y - " + str(y) + ", z - " + str(z))
@@ -323,14 +325,18 @@ def main():
             state = "SM_PREPARE_MOVE"
 
         elif state == "SM_PREPARE_MOVE":
+            
             print("Preparing to move")
             if obj == "pringles":
-                move_left_arm(q[0], q[1], q[2], q[3]+0.3, q[4], q[5], q[6])   
-            else: 
+                #q=calculate_inverse_kinematics_left(x+0.1,y,z+0.2,0.5,-1.44,-0.67)
+                move_left_arm(q[0], q[1], q[2], q[3]+0.3, q[4], q[5], q[6])
+                
+            else:
+                #q=calculate_inverse_kinematics_right(x+0.12,y,z+0.3,-0.032,-1.525,0.2)
                 move_right_arm(-0.4,0,0,3,1,0,0)
+                #move_right_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
             move_base(-2,0,0,1)
             state = "SM_GO_PLACE"
-
         elif state == "SM_GO_PLACE":
             if not goal_reached and  not executing_task:
                 print("Going to the "+place+" in "+str(loc))
