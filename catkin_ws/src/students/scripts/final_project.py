@@ -29,7 +29,7 @@ from sound_play.msg import SoundRequest
 from custom_msgs.srv import *
 from custom_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "REYES ALONSO KATHERINE"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
