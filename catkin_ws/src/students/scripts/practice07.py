@@ -135,7 +135,7 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
     q=numpy.asarray(initial_guess) #initial guess
     p=forward_kinematics(q,Ti,Wi)
     err=p-pd
-    err[3:6]=(err[3:6]+math.pi)%(2*math.pi)-math.pi#rpy entre -pi y pi
+    err[3:6]=(err[3:6]+math.pi)%(2*math.pi)-math.pi 
     while numpy.linalg.norm(err)>tolerance and iterations<max_iterations:
         J=jacobian(q,Ti,Wi)
         q = q - numpy.dot(numpy.linalg.pinv(J),err+math.pi)%(2*math.pi)-math.pi
