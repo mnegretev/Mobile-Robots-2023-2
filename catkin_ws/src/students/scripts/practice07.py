@@ -18,7 +18,7 @@ import numpy
 import urdf_parser_py.urdf
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
-
+from std_msgs.msg import Float64MultiArray
 NAME = "RUTH GETZEMANI MORENO CEDANO"
 
 def get_model_info():
