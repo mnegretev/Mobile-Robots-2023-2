@@ -48,9 +48,21 @@ def callback_goal_reached(msg):
     goal_reached = msg.data
     print("Received goal reached: " + str(goal_reached))
 
+#
+# This function parses the object and location strings from recognized vocabulary in Sphinx.
+#
 def parse_command(cmd):
-    obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.0,8.5] if "TABLE" in cmd else [3.22, 9.72]
+    obj = "pringles" if "PRINGLES" in cmd else "BEER"
+    if "LIVINGROOM" in cmd: 
+        loc = [8.0,8.5] 
+    elif "KITCHEN" in cmd: 
+        loc = [3.22, 9.72]
+    elif "TABLE" in cmd: 
+        loc = [5.8, 7.44]
+    elif "BEDROOM" in cmd: 
+        loc = [7, 0.3]
+    else:
+        loc = [2.5, -0.115]
     return obj, loc
 
 #
@@ -153,7 +165,7 @@ def say(text):
     msg.sound   = -3
     msg.command = 1
     msg.volume  = 1.0
-    msg.arg2    = "voice_kal_diphone"
+    msg.arg2    = "voice_cmu_us_slt_arctic_hts" # Female US voice
     msg.arg = text
     pubSay.publish(msg)
     time.sleep(2.0)
@@ -219,6 +231,9 @@ def main():
     global new_task, recognized_speech, executing_task, goal_reached
     global pubLaGoalPose, pubRaGoalPose, pubHdGoalPose, pubLaGoalGrip, pubRaGoalGrip
     global pubGoalPose, pubCmdVel, pubSay
+    #
+    # Initialize services
+    #
     print("FINAL PROJECT - " + NAME)
     rospy.init_node("final_project")
     rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
@@ -243,29 +258,67 @@ def main():
     # FINAL PROJECT 
     #
     new_task = False
+    goal_reached = False
+    #
+    # "SM_INIT": ARCTICULAR DISPLACEMENTS AND TASK RESET
+    #
     state = "SM_INIT"
     while not rospy.is_shutdown():
         if state == "SM_INIT":
             print("Final proyect. Waiting for task...")
             say("Waiting")
+            new_task = False
+            goal_reached = False
+            #move_base(0.3,0,0.3)
+            move_head(0,0)
+            move_left_arm(0, 0, 0, 0, 0, 0,0)
+            move_left_gripper(0)
+            move_right_arm(0, 0, 0, 0, 0, 0,0)
+            move_right_gripper(0)
             state = "SM_WAIT_TASK"
             
-
+    #
+    # "SM_WAIT_TASK": IF TASK RECEIVED PARSE CMD FOR OBJ AND LOC
+    #
         elif state == "SM_WAIT_TASK":
             if(new_task):
                 obj,loc = parse_command(recognized_speech)
-                print("New task received. Requested object: " + obj+ " Requested lcoation: " + str(loc))
+                print("New task received. Requested object: " + obj+ " Requested location: " + str(loc))
                 say("Task received")
                 time.sleep(2.0)
                 state = "SM_MOVE_HEAD"
 
+    #
+    # "SM_MOVE_HEAD": TILT DOWN HEAD TO SEE TABLE
+    #
         elif state == "SM_MOVE_HEAD":
             print("Moving head")
             say("Moving head")
             move_head(0,-1.0)
             time.sleep(2.0)
+            state = "SM_PREPARE_TAKE"
+
+    #
+    # "SM_PREPARE_TAKE": MOVES BASE BACKWARDS AND PREPARES ARM POSITION FOR DESIRED OBJECT
+    #
+        elif state == "SM_PREPARE_TAKE":
+            print("Preparing to take " + obj)
+            #move_base(1,0,1)
+            if obj == "pringles":
+                move_left_arm(-0.7,0.01,0.01,2,0.01,0.6,0.01)
+                move_left_gripper(0.2)
+            else:
+                move_base(-0.5,0,1.2)
+                time.sleep(1.0)
+                move_right_arm(-1, -0.2, -0.01, 1.4, 1.1, -0.01, -0.01)
+                move_right_gripper(0.2)
+            time.sleep(2.0)
+            #move_base(0.5,0,0.4)
             state = "SM_RECOGNIZE_OBJ"
 
+    #
+    # "SM_RECOGNIZE_OBJ": UTILIZES COLOR SEGMENTATION TO OBTAIN COORDINATES OF DESIRED OBJECT
+    #
         elif state == "SM_RECOGNIZE_OBJ":
             print("Trying to find: " + obj)
             say("I am looking for " + obj)
@@ -275,48 +328,99 @@ def main():
             say(obj + "found")
             state = "SM_TRANSFORM"
 
+    #
+    # "SM_TRANSFORM": TRANSFORMS COORDINATES FROM BASE TO SHOULDERS
+    #
         elif state == "SM_TRANSFORM":
             if obj == "pringles":
                 x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_left_link")
+                x = x+0.15
                 time.sleep(2.0)
                 print("Coordinates referenced to left shoulder")
                 say(obj+"coordinates transformed")
                 time.sleep(2.0)
             else:
                 x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_right_link")
+                x = x- 0.05
+                z = z + 0.08
                 time.sleep(2.0)
                 print("Coordinates referenced to right shoulder")
                 say(obj+"coordinates transformed")
                 time.sleep(2.0)
             print("Object transfered coordinates at: x - "+ str(x) + ", y - " + str(y) + ", z - " + str(z))
-            state = "SM_PREPARE_TAKE"
-
-        elif state == "SM_PREPARE_TAKE":
-            print("Preparing to take " + obj)
-            move_base(-2,0,1)
-            if obj == "pringles":
-                move_left_arm(-1.201,0.193,-0.01,1.546, 0.001, 1.14,0.002)
-                move_left_gripper(0.4)
-            else:
-                move_right_arm(-0.931,-0.189,0.014,1.346,0.821,0.035,0.003)
-                move_right_gripper(0.4)
-            move_base(2,0,1)
             state = "SM_TAKE_OBJ"
 
+
+    #
+    # "SM_TAKE_OBJ": OBTAINS IK FROM COORDINATES AND MOVES ARM TO CENTROID OF DESIRED OBJECT
+    #
         elif state == "SM_TAKE_OBJ":
             print("Calculating inverse kinemtics")
+            say("Grabbing " + obj)
+            time.sleep(1.0)
             if obj == "pringles":
-                q=calculate_inverse_kinematics_left(x,y,z,0.5,-1.44,-0.67)
+                q=calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
                 move_left_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
+                time.sleep(1.0)
                 move_left_gripper(-0.4)
             else:
-                q=calculate_inverse_kinematics_right(x,y,z,-0.108,-0.987,0.303)
-                move_right_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
-                move_right_gripper(-0.4)
-            
+                q=calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
+                move_right_arm(q[0], q[1], q[2], q[3]+0.06, q[4]+0.05, q[5]+0.2, q[6])
+                time.sleep(1.0)
+                move_base(0.5,0,2.0)
+                time.sleep(1.0)
+                move_right_gripper(-0.5)
+            time.sleep(2.0)
             print(q)
             state = "SM_PREPARE_MOVE"
 
+    #
+    # "SM_PREPARE_MOVE: MOVES BASE BACKWARDS AND LIFTS ARM TO AVOID COLLISION WITH TABLE
+    #
+        elif state == "SM_PREPARE_MOVE":
+            print("Preparing to move")
+            
+            if obj == "pringles":
+                time.sleep(1.0)
+                move_base(-1,0,1)
+                move_left_arm(-1.201,0.193,-0.01,1.546, 0.001, 1.14,0.002)
+            else:
+                move_right_arm(q[0], q[1], q[2], q[3]+0.2, q[4]+0.5, q[5], q[6])
+                time.sleep(1.0)
+                move_base(-1,0,2.5)
+                time.sleep(1.0)
+                move_right_arm(-1, -0.2, 0, 1.4, 1.1, 0, 0)
+            time.sleep(2.0)
+            state = "SM_MOVE"
+
+    #
+    # "SM_MOVE": PATH FOLLOWING FROM LOC
+    #
+        elif state == "SM_MOVE":
+            print("Moving to location in: " + str(loc))
+            say("Moving to location")
+            move_head(0,0)
+            go_to_goal_pose(loc[0], loc[1])
+            state = "SM_WAIT_NAVIGATION"
+
+    #
+    # "SM_WAIT_NAVIGATION": WAITS FOR ROBOT TO ARRIVE TO DESTINATION
+    #
+        elif state == "SM_WAIT_NAVIGATION":
+            if (goal_reached):
+                print("Arrived to destination")
+                say("Arrived to destination")
+                time.sleep(1.0)
+                state = "SM_END"
+
+    #
+    # "SM_END": ROBOT ARRIVES TO DESTINATION
+    #
+        elif state == "SM_END":
+            print("End of SM")
+            say("Happy to serve")
+            time.sleep(1.0)
+            state = "SM_INIT"
 
         else:
             print("Error in SM. Last state: "+state)
