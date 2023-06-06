@@ -242,100 +242,129 @@ def main():
     #
     # FINAL PROJECT 
     #
+    
+    new_task=True
+    executing_task=False
+    goal_reached=False
+    
+    state="SM_INIT"
 
-    new_task = False
-
-    state = "SM_INIT"
     while not rospy.is_shutdown():
-        if state == "SM_INIT":
-            print("Final proyect. Waiting for task...")
-            say("Waiting")
-            state = "SM_WAIT_TASK"
+    
+        if state == "SM_INIT": # State 01 - Start
+            print("RM-Final Proyect. Waiting for task...")
+            say('Waiting for ...')
+            state = "SM_WAITING_TASK"
 
-            
+        elif state == "SM_WAITING_TASK": # State 02 - Wait a task 
+            if (new_task):
+                obj,loc,place = parse_command(recognized_speech)
+                # obj = "drink"
+                # loc = [1.96, 9.54]
+                # place = "kitchen"
+                print('New task received. Requested Object: {} Requested Location {}'.format(obj,str(loc)))
 
-        elif state == "SM_WAIT_TASK":
-            if(new_task):
-                obj,loc = parse_command(recognized_speech)
-                print("New task received. Requested object: " + obj+ " Requested lcoation: " + str(loc))
-                say("Task received")
+                say("Task Received")
                 time.sleep(2.0)
                 state = "SM_MOVE_HEAD"
-
-
-
-        elif state == "SM_MOVE_HEAD":
+        
+        elif state == "SM_MOVE_HEAD":  #State 03 - Move head 
             print("Moving head")
             say("Moving head")
             move_head(0,-1.0)
             time.sleep(2.0)
-            state = "SM_RECOGNIZE_OBJ"
+            state = "SM_RECOGNIZE_OBJ" 
 
-
-
-        elif state == "SM_RECOGNIZE_OBJ":
-            print("Trying to find: " + obj)
-            say("I am looking for " + obj)
+        
+        elif state == "SM_RECOGNIZE_OBJ": # State 04 -  Recognize selected object
+            print("Trying to find: {}" .format(obj))
+            say("I am looking for {}" .format(obj))
             x,y,z = find_object(obj)
             time.sleep(2.0)
-            print("Found object at: x - "+ str(x) + ", y - " + str(y) + ", z - " + str(z))
+            print("Found object at: x - {}, y - {}, z - {}" .format(str(x),str(y),str(z)))
             say(obj + "found")
             state = "SM_TRANSFORM"
 
-
-
-        elif state == "SM_TRANSFORM":
+        elif state == "SM_TRANSFORM": # State 05 -  Transformation to the arm, accord to the object
+            
             if obj == "pringles":
                 x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_left_link")
                 time.sleep(2.0)
                 print("Coordinates referenced to left shoulder")
-                say(obj+"coordinates transformed")
-                time.sleep(2.0)
+                say(obj+"Coordinates transformed")
+            
             else:
                 x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_right_link")
                 time.sleep(2.0)
                 print("Coordinates referenced to right shoulder")
                 say(obj+"coordinates transformed")
-                time.sleep(2.0)
-            print("Object transfered coordinates at: x - "+ str(x) + ", y - " + str(y) + ", z - " + str(z))
+            
+            print("Object transfered coordinates at: x - {}, y - {}, z - {}" .format(str(x),str(y),str(z)))
             state = "SM_PREPARE_TAKE"
 
-
-
-        elif state == "SM_PREPARE_TAKE":
-            print("Preparing to take " + obj)
-            move_base(-2,0,1)
+        elif state == "SM_PREPARE_TAKE": # State 06 - Prepare take the object
+            say("Prepare take {} ".format(obj))
+            print("Preparing to take {}".format(obj))
+            move_base(-2,0,0,1)
             if obj == "pringles":
-                move_left_arm(-1.201,0.193,-0.01,1.546, 0.001, 1.14,0.002)
+                move_left_arm(-0.3,0.193,-0.1100,2.1460,0.001,0.1400,0)
                 move_left_gripper(0.4)
             else:
-                move_right_arm(-0.931,-0.189,0.014,1.346,0.821,0.035,0.003)
+                move_right_arm(-0.3,-0.2,-0.03,3.0,0.5,0.0,0.0)
                 move_right_gripper(0.4)
-            move_base(2,0,1)
+            time.sleep(2)
+            move_base(2,0,0,1)
             state = "SM_TAKE_OBJ"
 
-
-
-        elif state == "SM_TAKE_OBJ":
+        elif state == "SM_TAKE_OBJ": # State 07 - With inverse kinemtics, take the object
+            say("Taking {}".format(obj))
             print("Calculating inverse kinemtics")
             if obj == "pringles":
-                q=calculate_inverse_kinematics_left(x,y,z,0.5,-1.44,-0.67)
+                q=calculate_inverse_kinematics_left(x+0.1,y,z,0.5,-1.44,-0.67)
                 move_left_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
                 move_left_gripper(-0.4)
             else:
-                q=calculate_inverse_kinematics_right(x,y,z,-0.108,-0.987,0.303)
+                q=calculate_inverse_kinematics_right(x+0.12,y,z+0.1,-0.032,-1.525,0.2)
                 move_right_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
-                move_right_gripper(-0.4)
-            
+                move_right_gripper(-1.0)
+            time.sleep(2)
             print(q)
             state = "SM_PREPARE_MOVE"
 
-            
+        
+        elif state == "SM_PREPARE_MOVE": # State 08 - Prepare move to goal point
+            print("Preparing to move")
+            say("Preparing to move")
+            if obj == "pringles":
+                move_left_arm(q[0], q[1], q[2], q[3]+0.3, q[4], q[5], q[6])
+            else:
+                move_right_arm(-0.4,0,0,3,1,0,0)
+            move_base(-2,0,0,1)
+            state = "SM_GOING_TO_POSITION"
+    
+        elif state == "SM_GOING_TO_POSITION": # State 09 - Robot move the goal point 
+            if not goal_reached and not executing_task:
+                print("Going to the "+place+" in "+str(loc))
+                say("Going to the "+place)
+                go_to_goal_pose(loc[0],loc[1])
+                executing_task= True
+            elif goal_reached:
+                executing_task= False
+                state = "SM_FINISHED_TASK"
+
+        elif state == "SM_FINISHED_TASK": # State 10 - End task
+            print("Delivering the obj")
+            say("TAKE YOUR "+obj)
+            if obj == "pringles":
+                move_left_gripper(0.4)
+            else:
+                move_right_gripper(0.4)
+            state="SM_INIT"
+            break
 
         else:
-            print("Error in SM. Last state: "+state)
-            break;
-        
+            print('Error in SM. Last State: {}'.format(state))
+            break
         loop.sleep()
 
 if __name__ == '__main__':
