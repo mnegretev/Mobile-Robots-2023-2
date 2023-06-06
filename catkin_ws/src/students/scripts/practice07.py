@@ -18,8 +18,9 @@ import numpy
 import urdf_parser_py.urdf
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
+from std_msgs.msg import Float64MultiArray
 
-NAME = "Gómez Serna Carlos David"
+NAME = "Gomez Serna Carlos David"
 
 def get_model_info():
     global joints, transforms
@@ -63,8 +64,15 @@ def forward_kinematics(q, Ti, Wi):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
-    x,y,z,R,P,Y = 0,0,0,0,0,0
+    # de los controles, podemos mover las manos. home, prepare
+    H =tft.identity_matrix()
+    for i in range(len(q)):
+        H=tft.concatenate_matrices(H,Ti[i],tft.rotation_matrix(q[i],Wi[i]))
+    H=tft.concatenate_matrices(H,Ti[7]) #multiplica H por la ultima traslacion
+    x,y,z=H[0,3],H[1,3],H[2,3]          #get xyz from resulting
+    R,P,Y=list(tft.euler_from_matrix(H)) #get rpy from resulting
     return numpy.asarray([x,y,z,R,P,Y])
+    # puedes verificar la cinematica directa en la ventana de control
 
 def jacobian(q, Ti, Wi):
     delta_q = 0.000001
@@ -89,22 +97,18 @@ def jacobian(q, Ti, Wi):
     #     FOR i = 1,..,7:
     #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
     #     RETURN J
-    # 
-    print("PointBreak4")
+    #     
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])            # J 6x7 full of zeros
-        for i in range(len(q)):
-
-     J[:,i] = (forward_kinematics(q_next[i,:], Ti, Wi) - forward_kinematics(q_prev[i,:], Ti, Wi)) / (2 * delta_q)
-
-    print("Se calcula el jacobiano")
-
-    print(J)
+    qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
+    qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
+    for i in range(len(q)):
+        J[:,i] =(forward_kinematics(qn[i],Ti,Wi) - forward_kinematics(qp[i],Ti,Wi))/delta_q/2.0  
     return J
 
 def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])  # Desired configuration
     tolerance = 0.01
-    max_iterations = 20
+    max_iterations = 30
     iterations = 0
     #
     # TODO:
@@ -128,43 +132,31 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
     #        Increment iterations
     #    Return calculated q if maximum iterations were not exceeded
     #    Otherwise, return None
-    #Jacobiano
-     J = jacobian(q, Ti, Wi)
+    #   Libro David Linch para este tema
+    q = numpy.asarray(initial_guess) #initial guess
+    p = forward_kinematics(q,Ti,Wi)
+    error= p - pd
+    error[3:6] = (error[3:6] +math.pi)%(2*math.pi)-math.pi #solo para angulos row,pitch yall manetener entre -pi y pi
+    while numpy.linalg.norm(error) > tolerance and iterations < max_iterations:
+        J = jacobian(q,Ti,Wi)
+        q = ( q - numpy.dot(numpy.linalg.pinv(J),error) + math.pi )%(2*math.pi)-math.pi
+        p = forward_kinematics(q,Ti,Wi)
+        error= p - pd
+        error[3:6] = (error[3:6] +math.pi)%(2*math.pi)-math.pi 
+        iterations+=1
+    if iterations < max_iterations:
+        print("Inverse Kinematics .-> IK solved after "+ str(iterations)+ " iterations:")
+        return q
+    else:
+        print("InverseKinematics.->Cannot solve IK. Max attempst exceeded.")
+        return None
 
-    
-
-     q = q - (numpy.dot(numpy.linalg.pinv(J), err))
-
-     
-
-     q = (q + math.pi) % (2 * math.pi) - math.pi
-
-    
-
-     p = forward_kinematics(q, Ti, Wi)
-
-     
-
-     err = p - pd
-
-     err[3:6] = (err[3:6] + math.pi) % (2 * math.pi) - math.pi
-
-     
-
-     iterations += 1
-
-    print("PointBreakTerminaIK")
-
-    
-
-    return q if iterations < max_iterations else None
-    return None
 
 def callback_la_ik_for_pose(req):
     global transforms, joints
     Ti = transforms['left']                               
     Wi = [joints['left'][i].axis for i in range(len(joints['left']))]
-    initial_guess = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray).data
+    initial_guess = rospy.wait_for_message("/hardware/left_arm/current_pose", Float64MultiArray).data
     q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi,initial_guess)
     if q is None:
         return None
