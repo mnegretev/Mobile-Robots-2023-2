@@ -219,6 +219,7 @@ def main():
     global new_task, recognized_speech, executing_task, goal_reached, place_reached, out_of_table
     global pubLaGoalPose, pubRaGoalPose, pubHdGoalPose, pubLaGoalGrip, pubRaGoalGrip
     global pubGoalPose, pubCmdVel, pubSay
+    global prev_obj
     print("FINAL PROJECT - " + NAME)
     rospy.init_node("final_project")
     rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
@@ -244,6 +245,7 @@ def main():
     #
     out_of_table = False
     new_task = False
+    prev_obj = ""
     state = "SM_INIT"
     while not rospy.is_shutdown():
         if state == "SM_INIT":
@@ -258,6 +260,12 @@ def main():
                     state = "SM_MOVE_HEAD"
                 else:
                     state = "SM_INIT_MOVING_ROBOT"
+                    if prev_obj != obj:
+                        state = "SM_GOING_TO_TABLE"
+                        print("Drop " + prev_obj)
+                        say(f"I'm going to drop " + prev_obj)
+                        go_to_goal_pose(3.22,6.05)
+                prev_obj = obj
 
         elif state == "SM_MOVE_HEAD":
             print("Moving Head")
@@ -320,7 +328,7 @@ def main():
             else:
                 move_right_gripper(1)
                 z = z + 0.1
-                x = x + 0.1
+                x = x + 0.05
                 q_conf = calculate_inverse_kinematics_right(x,y,z,-0.032,-1.525,0.2)
                 move_right_arm(q_conf[0],
                               q_conf[1],
@@ -329,6 +337,7 @@ def main():
                               q_conf[4],
                               q_conf[5],
                               q_conf[6])
+            
             
             time.sleep(3.0)
             state = "SM_TAKE_OBJECT"
@@ -339,13 +348,7 @@ def main():
             if obj == "pringles":
                 move_left_gripper(-0.2)
                 time.sleep(2.0)
-                move_left_arm(q_conf[0],
-                              q_conf[1],
-                              q_conf[2],
-                              q_conf[3],
-                              q_conf[4],
-                              q_conf[5]+0.4,
-                              q_conf[6])
+                move_left_arm(-0.7,0,-0.03,3.0,0.0,0.0,0.0) 
             else:
                 move_right_gripper(-0.2)
                 time.sleep(2.0)
@@ -363,20 +366,74 @@ def main():
 
             go_to_goal_pose(coorx,coory)
             place_reached = False
+            out_of_table = True
 
             state = "SM_MOVING_ROBOT"
-
 
         elif state == "SM_MOVING_ROBOT":
 
             if place_reached == True:
                 print("Arrived to" + lugar)
                 say(f"I'm in the {lugar}")
-                place_reached = False
                 state = "SM_WAITING_FOR_TASK"
                 new_task = False
+                place_reached = False
                 time.sleep(3.0)
-
+        
+        elif state == "SM_GOING_TO_TABLE":
+            
+            if place_reached == True:
+                place_reached = False
+                time.sleep(1.0)
+                state = "SM_GOING_TO_TABLE_2"
+                go_to_goal_pose(3.2,5.8)        
+        
+        elif state == "SM_GOING_TO_TABLE_2":
+            if place_reached == True:
+                state = "SM_DROP_OBJ"
+                print("Leave on the table")
+                say(f"Leave on the table")
+                move_base(0,0.25,2)
+                time.sleep(3.0)
+                move_base(0.12,0,0.4)
+                time.sleep(1.0)
+                place_reached = False
+        
+        elif state == "SM_DROP_OBJ":
+            if obj == "pringles":
+                move_right_arm(q_conf[0],
+                              q_conf[1],
+                              q_conf[2],
+                              q_conf[3]+0.4,
+                              q_conf[4],
+                              q_conf[5],
+                              q_conf[6])
+                time.sleep(1.0)
+                move_right_gripper(1)
+                time.sleep(1.0)
+                move_right_arm(-0.9,0,0,3.0,1.0,0,0)
+                time.sleep(1.0)
+                move_right_arm(0,0,0,0,0,0,0)
+                time.sleep(1.0)
+                move_right_gripper(0)
+            else:
+                move_left_arm(q_conf[0],
+                              q_conf[1],
+                              q_conf[2],
+                              q_conf[3]+0.4,
+                              q_conf[4],
+                              q_conf[5],
+                              q_conf[6])
+                time.sleep(1.0)
+                move_left_gripper(1)
+                time.sleep(1.0)
+                move_left_arm(-0.9,0,0,3.0,1.0,0,0)
+                time.sleep(1.0)
+                move_left_arm(0,0,0,0,0,0,0)
+                time.sleep(1.0)
+                move_left_gripper(0)
+            time.sleep(3.0)
+            state = "SM_MOVE_HEAD"
             
     
     
