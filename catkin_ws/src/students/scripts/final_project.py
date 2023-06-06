@@ -1,266 +1,144 @@
-!/usr/bin/env python3
+#!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2023-2
-# FINAL PROJECT - SIMPLE SERVICE ROBOT
-# 
+# PRACTICE 3 - PATH FOLLOWING
+#
 # Instructions:
-# Write the code necessary to make the robot to perform the following possible commands:
-# * Robot take the <pringles|drink> to the <table|kitchen>
-# You can choose where the table and kitchen are located within the map.
-# Pringles and drink are the two objects on the table used in practice 07.
-# The Robot must recognize the orders using speech recognition.
-# Entering the command by text or similar way is not allowed.
-# The Robot must announce the progress of the action using speech synthesis,
-# for example: I'm going to grab..., I'm going to navigate to ..., I arrived to..., etc.
-# Publishers and suscribers to interact with the subsystems (navigation,
-# vision, manipulation, speech synthesis and recognition) are already declared. 
+# Write the code necessary to move the robot along a given path.
+# Consider a differential base. Max linear and angular speeds
+# must be 0.5 and 1.0 respectively.
 #
 
 import rospy
 import tf
 import math
-import time
-from std_msgs.msg import String, Float64MultiArray, Float64, Bool
+from std_msgs.msg import Bool
 from nav_msgs.msg import Path
 from nav_msgs.srv import GetPlan, GetPlanRequest
-from sensor_msgs.msg import PointCloud2
-from geometry_msgs.msg import Twist, PoseStamped, Pose, Point, PointStamped
-from sound_play.msg import SoundRequest
-from custom_msgs.srv import *
-from custom_msgs.msg import *
+from custom_msgs.srv import SmoothPath, SmoothPathRequest
+from geometry_msgs.msg import Twist, PoseStamped, Pose, Point
 
-NAME = "Escarzaga Solis Ruben"
+NAME = "Ruben Escarzaga Solis"
 
-#
-# Global variable 'speech_recognized' contains the last recognized sentence
-#
-def callback_recognized_speech(msg):
-    global recognized_speech, new_task, executing_task
-    recognized_speech = msg.hypothesis[0]
-    print("New command received: " + recognized_speech)
-    new_task = True
+pub_goal_reached = None
+pub_cmd_vel = None
+loop        = None
+listener    = None
 
-#
-# Global variable 'goal_reached' is set True when the last sent navigation goal is reached
-#
-def callback_goal_reached(msg):
-    global goal_reached
-    goal_reached = msg.data
-    print("Received goal reached: " + str(goal_reached))
+def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
+    cmd_vel = Twist()
+    
+    #
+    # TODO:
+    # Implement the control law given by:
+    #
+    v_max = 0.5
+    w_max = 1.0
+    alpha = 0.15
+    beta = 0.35
+    error_a = ((math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a + math.pi) % (2*math.pi))- math.pi
+    v = v_max*math.exp(-error_a*error_a/alpha)
+    w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+    cmd_vel.linear.x = v
+    cmd_vel.angular.z = w
+    #
+    # where error_a is the angle error and
+    # v and w are the linear and angular speeds taken as input signals
+    # and v_max, w_max, alpha and beta, are tunning constants.
+    # Store the resulting v and w in the Twist message cmd_vel
+    # and return it (check online documentation for the Twist message).
+    # Remember to keep error angle in the interval (-pi,pi]
+    #
+    
+    return cmd_vel
 
-def parse_command(cmd):
-    obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.0,8.5] if "TABLE" in cmd else [3.22, 9.72]
-    return obj, loc
+def follow_path(path):
+    #
+    # TODO:
+    # Review the following code which uses the calculate_control function to move the robot along the path.
+    # Path is given as a sequence of points [[x0,y0], [x1,y1], ..., [xn,yn]]
+    # The speed is sent using the publisher 'pub_cmd_vel' declared as global variable.
+    # When the robot reaches the end of the path, a boolean 'success' value is published.
+    # The code executes the following steps:
+    #
+    # Set local goal point as the first point of the path
+    # Set global goal point as the last point of the path
+    # Get robot position with [robot_x, robot_y, robot_a] = get_robot_pose(listener)
+    # Calculate global error as the magnitude of the vector from robot pose to global goal point
+    # Calculate local  error as the magnitude of the vector from robot pose to local  goal point
+    #
+    # WHILE global error > tol and not rospy.is_shutdown() #This keeps the program aware of signals such as Ctrl+C
+    #     Calculate control signals v and w and publish the corresponding message
+    #     loop.sleep()  #This is important to avoid an overconsumption of processing time
+    #     Get robot position
+    #     Calculate local error
+    #     If local error is less than 0.3 (you can change this constant)
+    #         Change local goal point to the next point in the path
+    #     Calculate global error
+    # Send zero speeds (otherwise, robot will keep moving after reaching last point)
+    # Publish a 'True' using the pub_goal_reached publisher
+    #
+    current_point = 0
+    [local_xg,  local_yg ] = path[current_point]
+    [global_xg, global_yg] = path[len(path)-1]
+    [robot_x, robot_y, robot_a]    = get_robot_pose(listener)
+    global_error = math.sqrt((global_xg-robot_x)**2 + (global_yg-robot_y)**2)
+    local_error  = math.sqrt((local_xg-robot_x) **2 + (local_yg-robot_y) **2)
+    
+    while not rospy.is_shutdown() and global_error > 0.1:
+        pub_cmd_vel.publish(calculate_control(robot_x, robot_y, robot_a, local_xg, local_yg))
+        loop.sleep()
+        [robot_x, robot_y, robot_a] = get_robot_pose(listener)
+        local_error  = math.sqrt((local_xg-robot_x) **2 + (local_yg-robot_y) **2)
+        current_point = min(current_point+1, len(path)-1) if local_error < 0.3 else current_point
+        [local_xg,  local_yg ] = path[current_point]
+        global_error = math.sqrt((global_xg-robot_x)**2 + (global_yg-robot_y)**2)
+    pub_cmd_vel.publish(Twist())
+    pub_goal_reached.publish(True)
+    return
+    
+def callback_global_goal(msg):
+    print("Calculating path from robot pose to " + str([msg.pose.position.x, msg.pose.position.y]))
+    [robot_x, robot_y, robot_a] = get_robot_pose(listener)
+    req = GetPlanRequest(goal=PoseStamped(pose=msg.pose))
+    req.start.pose.position = Point(x=robot_x, y=robot_y)
+    path = rospy.ServiceProxy('/path_planning/a_star_search', GetPlan)(req).plan
+    try:
+        path = rospy.ServiceProxy('/path_planning/smooth_path',SmoothPath)(SmoothPathRequest(path=path)).smooth_path
+    except:
+        pass
+    print("Following path with " + str(len(path.poses)) + " points...")
+    follow_path([[p.pose.position.x, p.pose.position.y] for p in path.poses])
+    print("Global goal point reached")
 
-#
-# This function sends the goal articular position to the left arm and sleeps 2 seconds
-# to allow the arm to reach the goal position. 
-#
-def move_left_arm(q1,q2,q3,q4,q5,q6,q7):
-    global pubLaGoalPose
-    msg = Float64MultiArray()
-    msg.data.append(q1)
-    msg.data.append(q2)
-    msg.data.append(q3)
-    msg.data.append(q4)
-    msg.data.append(q5)
-    msg.data.append(q6)
-    msg.data.append(q7)
-    pubLaGoalPose.publish(msg)
-    time.sleep(2.0)
-
-#
-# This function sends the goal angular position to the left gripper and sleeps 1 second
-# to allow the gripper to reach the goal angle. 
-#
-def move_left_gripper(q):
-    global pubLaGoalGrip
-    pubLaGoalGrip.publish(q)
-    time.sleep(1.0)
-
-#
-# This function sends the goal articular position to the right arm and sleeps 2 seconds
-# to allow the arm to reach the goal position. 
-#
-def move_right_arm(q1,q2,q3,q4,q5,q6,q7):
-    global pubRaGoalPose
-    msg = Float64MultiArray()
-    msg.data.append(q1)
-    msg.data.append(q2)
-    msg.data.append(q3)
-    msg.data.append(q4)
-    msg.data.append(q5)
-    msg.data.append(q6)
-    msg.data.append(q7)
-    pubRaGoalPose.publish(msg)
-    time.sleep(2.0)
-
-#
-# This function sends the goal angular position to the right gripper and sleeps 1 second
-# to allow the gripper to reach the goal angle. 
-#
-def move_right_gripper(q):
-    global pubRaGoalGrip
-    pubRaGoalGrip.publish(q)
-    time.sleep(1.0)
-
-#
-# This function sends the goal pan-tilt angles to the head and sleeps 1 second
-# to allow the head to reach the goal position. 
-#
-def move_head(pan, tilt):
-    global pubHdGoalPose
-    msg = Float64MultiArray()
-    msg.data.append(pan)
-    msg.data.append(tilt)
-    pubHdGoalPose.publish(msg)
-    time.sleep(1.0)
-
-#
-# This function sends a linear and angular speed to the mobile base to perform
-# low-level movements. The mobile base will move at the given linear-angular speeds
-# during a time given by 't'
-#
-def move_base(linear, angular, t):
-    global pubCmdVel
-    cmd = Twist()
-    cmd.linear.x = linear
-    cmd.angular.z = angular
-    pubCmdVel.publish(cmd)
-    time.sleep(t)
-    pubCmdVel.publish(Twist())
-
-#
-# This function publishes a global goal position. This topic is subscribed by
-# pratice04 and performs path planning and tracking.
-#
-def go_to_goal_pose(goal_x, goal_y):
-    global pubGoalPose
-    goal_pose = PoseStamped()
-    goal_pose.pose.orientation.w = 1.0
-    goal_pose.pose.position.x = goal_x
-    goal_pose.pose.position.y = goal_y
-    pubGoalPose.publish(goal_pose)
-
-#
-# This function sends a text to be synthetized.
-#
-def say(text):
-    global pubSay
-    msg = SoundRequest()
-    msg.sound   = -3
-    msg.command = 1
-    msg.volume  = 1.0
-    msg.arg2    = "voice_kal_diphone"
-    msg.arg = text
-    pubSay.publish(msg)
-
-#
-# This function calls the service for calculating inverse kinematics for left arm (practice 08)
-# and returns the calculated articular position.
-#
-def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
-    req_ik.x = x
-    req_ik.y = y
-    req_ik.z = z
-    req_ik.roll  = roll
-    req_ik.pitch = pitch
-    req_ik.yaw   = yaw
-    clt = rospy.ServiceProxy("/manipulation/la_inverse_kinematics", InverseKinematics)
-    resp = clt(req_ik)
-    return [resp.q1, resp.q2, resp.q3, resp.q4, resp.q5, resp.q6, resp.q7]
-
-#
-# This function calls the service for calculating inverse kinematics for right arm (practice 08)
-# and returns the calculated articular position.
-#
-def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
-    req_ik = InverseKinematicsRequest()
-    req_ik.x = x
-    req_ik.y = y
-    req_ik.z = z
-    req_ik.roll  = roll
-    req_ik.pitch = pitch
-    req_ik.yaw   = yaw
-    clt = rospy.ServiceProxy("/manipulation/ra_inverse_kinematics", InverseKinematics)
-    resp = clt(req_ik)
-    return [resp.q1, resp.q2, resp.q3, resp.q4, resp.q5, resp.q6, resp.q7]
-
-#
-# Calls the service for finding object (practice 08) and returns
-# the xyz coordinates of the requested object w.r.t. "realsense_link"
-#
-def find_object(object_name):
-    clt_find_object = rospy.ServiceProxy("/vision/find_object", FindObject)
-    req_find_object = FindObjectRequest()
-    req_find_object.cloud = rospy.wait_for_message("/hardware/realsense/points", PointCloud2)
-    req_find_object.name  = object_name
-    resp = clt_find_object(req_find_object)
-    return [resp.x, resp.y, resp.z]
-
-#
-# Transforms a point xyz expressed w.r.t. source frame to the target frame
-#
-def transform_point(x,y,z, source_frame, target_frame):
-    listener = tf.TransformListener()
-    listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
-    obj_p = PointStamped()
-    obj_p.header.frame_id = source_frame
-    obj_p.header.stamp = rospy.Time(0)
-    obj_p.point.x, obj_p.point.y, obj_p.point.z = x,y,z
-    obj_p = listener.transformPoint(target_frame, obj_p)
-    return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
+def get_robot_pose(listener):
+    try:
+        ([x, y, z], rot) = listener.lookupTransform('map', 'base_link', rospy.Time(0))
+        a = 2*math.atan2(rot[2], rot[3])
+        a = a - 2*math.pi if a > math.pi else a
+        return [x, y, a]
+    except:
+        pass
+    return [0,0,0]
 
 def main():
-    global new_task, recognized_speech, executing_task, goal_reached
-    global pubLaGoalPose, pubRaGoalPose, pubHdGoalPose, pubLaGoalGrip, pubRaGoalGrip
-    global pubGoalPose, pubCmdVel, pubSay
-    print("FINAL PROJECT - " + NAME)
-    rospy.init_node("final_project")
-    rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
-    rospy.Subscriber('/navigation/goal_reached', Bool, callback_goal_reached)
-    pubGoalPose = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
-    pubCmdVel   = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-    pubSay      = rospy.Publisher('/robotsound', SoundRequest, queue_size=10)
-    pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose" , Float64MultiArray, queue_size=10);
-    pubRaGoalPose = rospy.Publisher("/hardware/right_arm/goal_pose", Float64MultiArray, queue_size=10);
-    pubHdGoalPose = rospy.Publisher("/hardware/head/goal_pose"     , Float64MultiArray, queue_size=10);
-    pubLaGoalGrip = rospy.Publisher("/hardware/left_arm/goal_gripper" , Float64, queue_size=10);
-    pubRaGoalGrip = rospy.Publisher("/hardware/right_arm/goal_gripper", Float64, queue_size=10);
+    global pub_cmd_vel, pub_goal_reached, loop, listener
+    print("PRACTICE 03 - " + NAME)
+    rospy.init_node("practice03")
+    rospy.Subscriber('/move_base_simple/goal', PoseStamped, callback_global_goal)
+    pub_cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+    pub_goal_reached = rospy.Publisher('/navigation/goal_reached', Bool, queue_size=10)
     listener = tf.TransformListener()
     loop = rospy.Rate(10)
-    print("Waiting for services...")
-    rospy.wait_for_service('/manipulation/la_inverse_kinematics')
-    rospy.wait_for_service('/manipulation/ra_inverse_kinematics')
-    rospy.wait_for_service('/vision/find_object')
-    print("Services are now available.")
-
-    #
-    # FINAL PROJECT 
-    #
-    new_task =  False
-    state = "SM_INIT"
-    while not rospy.is_shutdown():
-        if state == "SM_INIT"
-            print("Starting final project. Waiting for new task")
-            state = "SM_WAIT_TASK"
-
-        elif state == "SM_WAIT_TASK"
-            if (new_task):
-                print("New task received")
-                say("Task received")
-                time.sleep(2.0)
-                state = "SM_MOVE_HEAD"
-        elif state == "SM_MOVE_HEAD"
-            
-
-
-        loop.sleep()
+    print("Waiting for service for path planning...")
+    rospy.wait_for_service('/path_planning/a_star_search')
+    print("Service for path planning is now available.")
+    rospy.spin()
 
 if __name__ == '__main__':
     try:
         main()
     except rospy.ROSInterruptException:
         pass
+    
     
