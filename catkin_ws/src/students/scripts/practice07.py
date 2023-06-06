@@ -14,11 +14,10 @@ import math
 import rospy
 import tf
 import tf.transformations as tft
-import numpy as np
+import numpy 
 import urdf_parser_py.urdf
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
-
 
 NAME = "RUTH GETZEMANI MORENO CEDANO"
 
@@ -70,7 +69,7 @@ def forward_kinematics(q, Ti, Wi):
     H= tft.concatenate_matrices(H,Ti[7])
     x,y,z=H[0,3], H[1,3], H[2,3]
     R,P,Y=list (tft.euler_from_matrix(H))
-    return np.asarray([x,y,x,R,P,Y])
+    return numpy.asarray([x,y,x,R,P,Y])
     
 
 def jacobian(q, Ti, Wi):
@@ -85,29 +84,29 @@ def jacobian(q, Ti, Wi):
     #
     # You can do the following steps:
     #     J = matrix of 6x7 full of zeros
-    #     q_next = [q1+delta       q2        q3   ....     q7
+    #     qn = [q1+delta       q2        q3   ....     q7
     #                  q1       q2+delta     q3   ....     q7
     #                              ....
     #                  q1          q2        q3   ....   q7+delta]
-    #     q_prev = [q1-delta       q2        q3   ....     q7
+    #     qp = [q1-delta       q2        q3   ....     q7
     #                  q1       q2-delta     q3   ....     q7
     #                              ....
     #                  q1          q2        q3   ....   q7-delta]
     #     FOR i = 1,..,7:
-    #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
+    #           i-th column of J = ( FK(i-th row of qn) - FK(i-th row of qp) ) / (2*delta_q)
     #     RETURN J
     #     
 
-    J = np.asarray([[0.0 for a in q] for i in range(6)])            # J 6x7 full of zeros
+    J = numpy.asarray([[0.0 for a in q] for i in range(6)])            # J 6x7 full of zeros
 
-    q_next=np.asarray([q,]*len(q))+ delta_q*np.identity(len(q))
-    q_prev=np.asarray([q,]*len(q))- delta_q*np.identity(len(q))
+    qn=numpy.asarray([q,]*len(q))+ delta_q*numpy.identity(len(q))
+    qp=numpy.asarray([q,]*len(q))- delta_q*numpy.identity(len(q))
     for i in range(len(q)):
-        J[:,i]=(forward_kinematics(q_next[i,:],Ti,Wi)-forward_kinematics(q_prev[i,:],Ti,Wi))/(2*delta_q)
+        J[:,i]=(forward_kinematics(qn[i,:],Ti,Wi)-forward_kinematics(qp[i,:],Ti,Wi))/(2*delta_q)
     return J
 
 def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
-    pd = np.asarray([x,y,z,roll,pitch,yaw])  # Desired configuration
+    pd = numpy.asarray([x,y,z,roll,pitch,yaw])  # Desired configuration
     tolerance = 0.01
     max_iterations = 20
     iterations = 0
@@ -135,20 +134,21 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
     #    Otherwise, return None
     #
 
-    q=np.asarray(initil_guess)
+    q=numpy.asarray(initial_guess)
     p=forward_kinematics(q,Ti,Wi)
     error=p-pd
     error[3:6]=(error[3:6]+math.pi)%(2*math.pi)-math.pi
-    while np.linalg.norm(error)>tolerance and iterations<=max_iterations:
+    while numpy.linalg.norm(error)>tolerance and iterations<max_iterations:
         J=jacobian(q,Ti,Wi)
-        q=(q-np.dot(np.linalg.pinv(J),error)+math.pi)%(2*math.pi)-math.pi
+        q=(q-numpy.dot(numpy.linalg.pinv(J),error)+math.pi)%(2*math.pi)-math.pi
         p=forward_kinematics(q,Ti,Wi)
         error=p-pd
         error[3:6]=(error[3:6]+math.pi)%(2*math.pi)-math.pi
         iterations+=1
 
-    if iterations<max_iterations:
-        print("Finished with q="+ q)
+    if iterations < max_iterations:
+        print("Finished with q=")
+        print(q)
         return q
     else:
         print("Number of iteratons exceeded :(")
