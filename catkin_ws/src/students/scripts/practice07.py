@@ -18,6 +18,7 @@ import numpy
 import urdf_parser_py.urdf
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
+from std_msgs.msg import Float64MultiArray
 
 NAME = "DELGADO SALDAÑA"
 
@@ -107,7 +108,7 @@ def jacobian(q, Ti, Wi):
 def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])  # Desired configuration
     tolerance = 0.01
-    max_iterations = 20
+    max_iterations = 30
     iterations = 0
     #
     # TODO:
@@ -138,11 +139,17 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
     err[3:6]=(err[3:6]+math.pi)%(2*math.pi)-math.pi#rpy entre -pi y pi
     while numpy.linalg.norm(err)>tolerance and iterations<max_iterations:
     	J=jacobian(q,Ti,Wi)
-    	q = q - numpy.dot(numpy.linalg.pinv(J),err+math.pi)%(2*math.pi)-math.pi
+    	q = (q - numpy.dot(numpy.linalg.pinv(J),err)+math.pi)%(2*math.pi)-math.pi
     	p=forward_kinematics(q,Ti,Wi)
     	err=p-pd
     	err[3:6]=(err[3:6]+math.pi)%(2*math.pi)-math.pi
     	iterations+=1
+    if iterations < max_iterations:
+    	print("Inverse Kinematics---->Solved after "+ str(iterations)+ " iterations:")
+    	return q
+    else:
+    	print("InverseKinematics---->Cannot solve.")
+    	return None
     	
     return q
 
