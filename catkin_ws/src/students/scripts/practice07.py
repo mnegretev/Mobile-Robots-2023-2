@@ -20,7 +20,7 @@ from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
 
-NAME = "CARMONA PONCE PAULA"
+NAME = "Ruben Escarzaga Solis"
 
 def get_model_info():
     global joints, transforms
