@@ -43,4 +43,4 @@
   <node name="practice06"  pkg="students" type="practice06.py"  output="screen"/>
   <node name="practice07"  pkg="students" type="practice07.py"  output="screen"/>
   <node name="final_project"  pkg="students" type="final_project.py"  output="screen"/>
-</launch>S
+</launch>
