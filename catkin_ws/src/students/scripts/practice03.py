@@ -41,7 +41,7 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y):
     # Store the resulting v and w in the Twist message cmd_vel
     # and return it (check online documentation for the Twist message).
     # Remember to keep error angle in the interval (-pi,pi]
-    alpha = 0.3
+    alpha = 0.15
     beta = 0.3
     v_max = 0.5
     w_max = 1.0
