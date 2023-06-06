@@ -323,7 +323,6 @@ def main():
             state = "SM_PREPARE_MOVE"
 
         elif state == "SM_PREPARE_MOVE":
-            
             print("Preparing to move")
             if obj == "pringles":
                 move_left_arm(q[0], q[1], q[2], q[3]+0.3, q[4], q[5], q[6])   
@@ -331,6 +330,7 @@ def main():
                 move_right_arm(-0.4,0,0,3,1,0,0)
             move_base(-2,0,0,1)
             state = "SM_GO_PLACE"
+
         elif state == "SM_GO_PLACE":
             if not goal_reached and  not executing_task:
                 print("Going to the "+place+" in "+str(loc))
@@ -348,7 +348,7 @@ def main():
                 move_left_gripper(0.4)
             else:
                 move_right_gripper(0.4)
-            state="SM_FINISH"
+            state="SM_INIT"
         else:
             print("Error in SM. Last state: "+state)
             break;
