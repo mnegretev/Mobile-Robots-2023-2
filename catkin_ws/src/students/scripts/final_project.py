@@ -36,12 +36,9 @@ NAME = "RUTH GETZEMANI MORENO CEDANO"
 #
 def callback_recognized_speech(msg):
     global recognized_speech, new_task, executing_task
-    if(executing_task):
-        return
     recognized_speech = msg.hypothesis[0]
-    new_task=True
     print("New command received: " + recognized_speech)
-    
+    new_task=True
 #
 # Global variable 'goal_reached' is set True when the last sent navigation goal is reached
 #
@@ -132,7 +129,7 @@ def move_base(linear, angular, t):
     pubCmdVel.publish(cmd)
     time.sleep(t)
     pubCmdVel.publish(Twist())
-    time.sleep(1.0)
+    
  
 #
 # This function publishes a global goal position. This topic is subscribed by
@@ -145,7 +142,7 @@ def go_to_goal_pose(goal_x, goal_y):
     goal_pose.pose.position.x = goal_x
     goal_pose.pose.position.y = goal_y
     pubGoalPose.publish(goal_pose)
-    time.sleep(1.0)
+    
  
 #
 # This function sends a text to be synthetized.
@@ -159,13 +156,14 @@ def say(text):
     msg.arg2    = "voice_kal_diphone"
     msg.arg = text
     pubSay.publish(msg)
-    time.sleep(1.0)
+
  
 #
 # This function calls the service for calculating inverse kinematics for left arm (practice 08)
 # and returns the calculated articular position.
 #
 def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
+    req_ik=InverseKinematicsRequest()
     req_ik.x = x
     req_ik.y = y
     req_ik.z = z
@@ -174,6 +172,7 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     req_ik.yaw   = yaw
     clt = rospy.ServiceProxy("/manipulation/la_inverse_kinematics", InverseKinematics)
     resp = clt(req_ik)
+    print(resp.q1, resp.q2, resp.q3, resp.q4, resp.q5, resp.q6, resp.q7)
     return [resp.q1, resp.q2, resp.q3, resp.q4, resp.q5, resp.q6, resp.q7]
 
 #
@@ -244,14 +243,14 @@ def main():
     #
     # FINAL PROJECT 
     #
-    new_task=True
+    new_task=False
     goal_reached=False
     executing_task=False
     state="SM_INIT"
     while not rospy.is_shutdown():
         if state=="SM_INIT":
             print("Final project is loading... Waiting for new task")
-            state="SM_WAITING_FOR_NEW_TASK":
+            state="SM_WAITING_FOR_NEW_TASK"
 
         elif state=="SM_WAITING_FOR_NEW_TASK":
             if(new_task):
@@ -276,78 +275,76 @@ def main():
             say("I found the " + obj)
             state="SM_OBJCHOSEN"
 
-        elif state=="SM_OBJCHOSEN"
-            if obj=="pringles":
-                target_frame="shoulders_left_link"
-                x,y,z=transform_point(x,y,z,"realsense_link",target_frame)
-                print("Coords of left arm")
-                say("Preparing to move left arm")
-                time.sleep(2.0)
-            else:
+        elif state=="SM_OBJCHOSEN":
+             if obj=="pringles":
+                 target_frame="shoulders_left_link"
+                 x,y,z=transform_point(x,y,z,"realsense_link",target_frame)
+                 print("Coords of left arm")
+                 say("Preparing to move left arm")
+                 time.sleep(2.0)
+             else:
                  target_frame2="shoulders_right_link"
                  x,y,z=transform_point(x,y,z,"realsense_link",taget_frame2)
                  print("Coords of right arm")
                  say("Preparing to move right arm")
                  time.sleep(2.0)
 
+             print("Coords wrt arm: "+str([x,y,z]))
+             state="SM_MOVE_TOTAKE"
 
-            print("Coords wrt arm: "+str([x,y,z]))
-            state="SM_MOVE_TOTAKE"
-
-        elif state=="SM_MOVE_TOTAKE"
-            move_base(-5,0.3,0)
-            if obj=="pringles"
+        elif state=="SM_MOVE_TOTAKE":
+             move_base(-5,0.3,0)
+             if obj=="pringles":
                  move_left_arm(-0.692,0.003,-0.002,2.205,-0.003,-0.046,0.000)
                  move_left-gripper(0.3)
-            else:
+             else:
                 move_base(-12,0,0)
                 move_right_arm(0.077,0.092,-0.107,1.1721,-0.311,-0.031,0.101)
                 move_right_gripper(0.3)
             
-            state="ALMOST_TAKE"
+             state="ALMOST_TAKE"
 
-        elif state=="ALMOST_TAKE"
+        elif state=="ALMOST_TAKE":
              print("Calculating inverse kinematics for goal position")
              say("Calculating inverse kinematics")
-                if obj=="pringles":
+             if obj=="pringles":
                     q=calculate_inverse_kinematics_left(x,y,z,-3.140,-1.480,3.141)
                     move_left_arm(q[0],q[1],q[2],q[3],q[4],q[5],q[6])
                     move_left_gripper(-0.2)
 
-                else:
+             else:
                     q=calculate_inverse_kinematics_right(x,y,z,-0.427,-1.225,0.734)
                     move_right_arm(q[0],q[1],q[2],q[3],q[4],q[5],q[6])
                     move_right_gripper(-0.2)
 
-                print(q)
-                state="MOVEMENT"
-        elif state=="MOVEMENT"
-                print("Preparing to move")
-                say("Preparing to move")
-                if obj=="pringles"
+                    print(q)
+                    state="MOVEMENT"
+        elif state=="MOVEMENT":
+             print("Preparing to move")
+             say("Preparing to move")
+             if obj=="pringles":
                     move_left_arm(q[0],q[1],q[2],q[3],q[4].q[5],q[6])
-                else:
+             else:
                     move_right_arm(-0.4,0,0,3,1,0,0)
-                move_base(-2,0,0,1)
-                state="GOING_TO"
-
-         elif state=="GOING_TO"
+                    move_base(-2,0,0,1)
+                    state="GOING_TO"
+        elif state=="GOING_TO":
                 if not goal_reached and not executing_task:
                     executing_task=True
                 elif goal_reached:
                     executing_task=False
                     state="FINISH"
                     say("I have finished")
-         elif state=="FINISH"
-                if obj=="pringles":
+        elif state=="FINISH":
+            if obj=="pringles":
                     move_left_gripper(0.4)
-                else:
-                    move_right_gripper(0.4)
-                    state="SM_INIT"
-                    break
+            else:
+                move_right_gripper(0.4)
+                state="SM_INIT"
+                break
         else:
-            print("error")
-            break;
+               print("error")
+               break;
         loop.sleep()
 
 if __name__ == '__main__':
