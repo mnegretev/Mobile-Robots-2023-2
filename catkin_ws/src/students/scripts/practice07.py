@@ -1,3 +1,14 @@
+#CEBALLOS RICARDO FERNANDO
+#!/usr/bin/env python3
+
+# MOBILE ROBOTS - UNAM, FI, 2023-2
+# PRACTICE 07 - INVERSE KINEMATICS
+# Instructions:
+# Calculate the inverse kinematics for both manipulators (left and right) given the
+# URDF descriptions and a desired configuration. Solve the inverse kinematics using
+# the Newton-Raphson method for root finding.
+# Modify only sections marked with the 'TODO' comment
+
 
 import math
 import rospy
@@ -8,7 +19,7 @@ import urdf_parser_py.urdf
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
 
-NAME = "CEBALLOS RICARDO FERNANDO"
+NAME = "CEBALLOS RICARDO FERNANDO "
 
 def get_model_info():
     global joints, transforms
@@ -60,7 +71,7 @@ def forward_kinematics(q, Ti, Wi):
     R,P,Y = list(tft.euler_from_matrix(H))
     #x,y,z,R,P,Y = 0,0,0,0,0,0
     return numpy.asarray([x,y,z,R,P,Y])
-
+    
 def jacobian(q, Ti, Wi):
     delta_q = 0.000001
     #
@@ -85,22 +96,16 @@ def jacobian(q, Ti, Wi):
     #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
     #     RETURN J
     #     
-    print("PointBreak4")
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])            # J 6x7 full of zeros
-    #[q,] * len(q) me genera una matriz cuadrada con numero de renglones de tamanio len(q)
-    #delta_q + numpy.identity(len(q)) me permite sumar el delta_q solamente a la diagonal de la matriz
     q_next = numpy.asarray([q,] * len(q) + ( delta_q * numpy.identity(len(q)) ))
     q_prev = numpy.asarray([q,] * len(q) - ( delta_q * numpy.identity(len(q)) ))
-    
-    print("PointBreak5")
-    #Se calcula el Jacobiano
     for i in range(len(q)):
      J[:,i] = (forward_kinematics(q_next[i,:], Ti, Wi) - forward_kinematics(q_prev[i,:], Ti, Wi)) / (2 * delta_q)
     print("Se calcula el jacobiano")
     print(J)
     return J
 
-def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi):
+def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])  # Desired configuration
     tolerance = 0.01
     max_iterations = 20
@@ -114,7 +119,7 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi):
     # Use the Newton-Raphson method for root finding. (Find the roots of equation FK(q) - pd = 0)
     # You can do the following steps:
     #
-    #    Set an initial guess for joints 'q'. Suggested: [-0.5, 0.6, 0.3, 2.0, 0.3, 0.2, 0.3]
+    #    Set an initial guess for joints 'q'.
     #    Calculate Forward Kinematics 'p' by calling the corresponding function
     #    Calcualte error = p - pd
     #    Ensure orientation angles of error are in [-pi,pi]
@@ -132,32 +137,34 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi):
     q = [-0.5, 0.6, 0.3, 2.0, 0.3, 0.2, 0.3]
     p = forward_kinematics(q, Ti, Wi)
     err = p - pd
-  
+    #Asegurar que los angulos de orientacion se encuentran entre [-pi,pi]
+    #Los angulos se encuentran en err[3:6] -> roll, pitch, yaw
     err[3:6] = (err[3:6] + math.pi) % (2 * math.pi) - math.pi
     print("PointBreak2")
     while(numpy.linalg.norm(err) > tolerance and iterations < max_iterations):
      #Calculo de Jacobiano
      J = jacobian(q, Ti, Wi)
-     
+     #Actualizar estimacion de q con la matriz pseudoinversa de J
      q = q - (numpy.dot(numpy.linalg.pinv(J), err))
-     
+     #Se asegura que los angulos q se encuentren entre [-pi, pi]
      q = (q + math.pi) % (2 * math.pi) - math.pi
-    
+     #Se recalculan las FK
      p = forward_kinematics(q, Ti, Wi)
-     
+     #Se recalcula el error y se asegura que los angulos se encuentren entre [-pi, pi]
      err = p - pd
      err[3:6] = (err[3:6] + math.pi) % (2 * math.pi) - math.pi
-     
+     #Se incrementan las iteraciones
      iterations += 1
     print("PointBreakTerminaIK")
-    
+    #Se devuelve q en caso de que no se excedan las max_iteraciones, caso contrario no se devuelve nada
     return q if iterations < max_iterations else None
 
 def callback_la_ik_for_pose(req):
     global transforms, joints
     Ti = transforms['left']                               
-    Wi = [joints['left'][i].axis for i in range(len(joints['left']))]  
-    q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi)
+    Wi = [joints['left'][i].axis for i in range(len(joints['left']))]
+    initial_guess = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray).data
+    q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi,initial_guess)
     if q is None:
         return None
     resp = InverseKinematicsResponse()
@@ -167,8 +174,9 @@ def callback_la_ik_for_pose(req):
 def callback_ra_ik_for_pose(req):
     global transforms, joints
     Ti = transforms['right']                               
-    Wi = [joints['right'][i].axis for i in range(len(joints['right']))]  
-    q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi)
+    Wi = [joints['right'][i].axis for i in range(len(joints['right']))]
+    initial_guess = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray).data
+    q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi, initial_guess)
     if q is None:
         return False
     resp = InverseKinematicsResponse()
