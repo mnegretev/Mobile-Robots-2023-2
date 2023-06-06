@@ -29,16 +29,19 @@ from sound_play.msg import SoundRequest
 from custom_msgs.srv import *
 from custom_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "RUTH GETZEMANI MORENO CEDANO"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
 #
 def callback_recognized_speech(msg):
     global recognized_speech, new_task, executing_task
+    if(executing_task):
+        return
     recognized_speech = msg.hypothesis[0]
+    new_task=True
     print("New command received: " + recognized_speech)
-
+    
 #
 # Global variable 'goal_reached' is set True when the last sent navigation goal is reached
 #
@@ -233,13 +236,42 @@ def main():
     rospy.wait_for_service('/manipulation/la_inverse_kinematics')
     rospy.wait_for_service('/manipulation/ra_inverse_kinematics')
     rospy.wait_for_service('/vision/find_object')
-    print("Services are now available.")
+    print("Services are now available:)")
 
     #
     # FINAL PROJECT 
     #
-    
+    new_task=False
+    state="SM_INIT"
     while not rospy.is_shutdown():
+        if state=="SM_INIT":
+            print("Final project is loading... Waiting for new task")
+            state="SM_WAITING_FOR_NEW_TASK":
+
+        elif state=="SM_WAITING_FOR_NEW_TASK":
+            if(new_task):
+                obj,loc=parse_command(recognized_speech)
+                print("New task received. Requested object:"+obj+"Requested loation:"+str(loc))
+                state="SM_MOVE_HEAD"
+
+        elif state=="SM_MOVE_HEAD":
+            print("Moving head")
+            move_head(0,-0.8)
+            state="SM_RECOGNIZE_OBJECT"
+
+        elif state=="SM_RECOGNIZE_OBJECT":
+            print("Trying to find "+obj)
+            say("I am looking for "+obj)
+            x,y,z=find_object(obj)
+            print("Found object at: "+str([x,y,z]))
+            target_frame="shoulders_left_link" if obj=="pringles" else "shoulders_right_link"
+            x,y,z=transform_point(x,y,z,"realsense_link",taget_frame)
+            print("Coords wrt arm: "+str([x,y,z]))
+            state="SM_MOVE_LEFT_ARM" if obj=="pringles"else"SM_MOVE_RIGHT_ARM"
+
+        else:
+            print("error")
+            break;
         loop.sleep()
 
 if __name__ == '__main__':
