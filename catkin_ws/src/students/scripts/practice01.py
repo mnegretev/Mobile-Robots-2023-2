@@ -58,7 +58,7 @@ def callback_inflated_map(req):
 
 def main():
     global cost_map, inflated_map
-    print("PRACTICE 01 - " + NAME)
+    print("PRACTICE 01 - " + "CRUZ CARRIZOSA SAMAEL XECOTCOVACH")
     rospy.init_node("practice01")
     rospy.wait_for_service('/static_map')
     pub_map  = rospy.Publisher("/inflated_map", OccupancyGrid, queue_size=10)

@@ -18,6 +18,7 @@ import numpy
 import urdf_parser_py.urdf
 from geometry_msgs.msg import PointStamped
 from custom_msgs.srv import *
+from std_msgs.msg import Float64MultiArray
 
 NAME = "Cruz Carrizosa Samael Xecotcovach"
 
@@ -143,6 +144,9 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
      err = p - pd
      err[3:6] = (err[3:6] + math.pi)%(2*math.pi) - math.pi
      iterations += 1
+    if iterations < max_iterations:
+     print("Impossible to solve InverseKinematics")
+     return None
      
     return q
 
