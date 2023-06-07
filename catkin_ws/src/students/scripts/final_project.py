@@ -340,7 +340,7 @@ def main():
             state="SM_INIT"
     			
         else:
-            print("SOMEDODY")
+            print("ya termine")
             break
             loop.sleep()
 
