@@ -105,6 +105,8 @@ def move_right_arm(q1,q2,q3,q4,q5,q6,q7):
 #
 def move_right_gripper(q):
     global pubRaGoalGrip
+    msg = Float64MultiArray() 
+    msg.data.append(q)
     pubRaGoalGrip.publish(q)
     time.sleep(1.0)
 
@@ -302,6 +304,7 @@ def main():
     			
             time.sleep(1.0)  
             move_base(3,0,1)
+            say("I'm a stupid robot stupi stupi stupid stupid")
             state="SM_TAKE_OBJECT"
     		
         elif state=="SM_TAKE_OBJECT":
