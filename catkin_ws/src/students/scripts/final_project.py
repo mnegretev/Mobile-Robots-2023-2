@@ -152,7 +152,7 @@ def say(text):
     msg = SoundRequest()
     msg.sound   = -3
     msg.command = 1
-    msg.volume  = 1.0
+    msg.volume  = 3.0
     msg.arg2    = "voice_kal_diphone"
     msg.arg = text
     pubSay.publish(msg)
@@ -237,7 +237,8 @@ def main():
     rospy.wait_for_service('/manipulation/la_inverse_kinematics')
     rospy.wait_for_service('/manipulation/ra_inverse_kinematics')
     rospy.wait_for_service('/vision/find_object')
-    print("Services are now available:).")
+    print("Services are now available:")
+    say("Starting nodes .Your wish is my command ")
 
     #
     # FINAL PROJECT 
@@ -250,6 +251,7 @@ def main():
     while not rospy.is_shutdown():
         if state=="SM_INIT":
             print("Starting final project. Waiting for new task")
+           
             goal_reached=False
             executing_task=False
             new_task=False
@@ -268,9 +270,9 @@ def main():
     		
         elif state=="SM_RECOGNIZE_OBJECT":
             print("Trying to find "+obj)
-            say("Looking for " +obj)
+            say("I'm looking for " +obj)
             x,y,z=find_object(obj)
-            print("Object location: "+ str([x,y,z]))
+            print("Found object at : "+ str([x,y,z]))
     		
             target_frame="shoulders_left_link" if obj=="pringles" else "shoulders_right_link"
             x,y,z=transform_point(x,y,z,"realsense_link", target_frame)
