@@ -261,6 +261,7 @@ def main():
             if(new_task):
                 obj,loc=parse_command(recognized_speech)
                 print("New task received. Requested object: "+obj+" Requested location: "+str(loc))
+                say("I've heard you")
                 state="SM_MOVE_HEAD"
     		
         elif state=="SM_MOVE_HEAD":
@@ -275,21 +276,24 @@ def main():
             print("Found object at : "+ str([x,y,z]))
     		
             target_frame="shoulders_left_link" if obj=="pringles" else "shoulders_right_link"
-            x,y,z=transform_point(x,y,z,"realsense_link", target_frame)
+            x,y,z = transform_point(x,y,z,"realsense_link", target_frame)
             print("Coords wrt arm: "+str([x,y,z]))
             time.sleep(1.0)
             state="SM_MOVE_ARM"
     		
     		
         elif state=="SM_MOVE_ARM":
-            move_base(-3,0,1)
+            #move_base(-3,0,1)
+            move_base(-2,0,0,1)
             if obj=="pringles":
-                move_left_arm(-0.3,0.2,-0.1,2.1,0.0,0.2,0.0)
+                #move_left_arm(-0.3,0.2,-0.1,2.1,0.0,0.2,0.0)
     			#move_left_arm(-0.7,0,0,1.9,0.1,0.5,0)
+                move_left_arm(-0.3,0.193,-0.1100,2.1460,0.001,0.1400,0)
                 move_left_gripper(0.4)
             else:
-                move_right_arm(-0.3,-0.2,0.1,3.0,0.5,0.0,0.0)
+                #move_right_arm(-0.3,-0.2,0.1,3.0,0.5,0.0,0.0)
     			#move_right_arm(-0.7,0.3,0.1,1.7,0.6,0.1,0.4)
+                move_right_arm(-0.3,-0.2,-0.03,3.0,0.5,0.0,0.0)
                 move_right_gripper(0.4)  
     			
             time.sleep(1.0)  
@@ -336,8 +340,8 @@ def main():
             state="SM_INIT"
     			
         else:
-            print("RIP x_x")
-            break;
+            print("SOMEDODY")
+            break
             loop.sleep()
 
 if __name__ == '__main__':
