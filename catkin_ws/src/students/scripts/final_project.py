@@ -21,6 +21,7 @@ import tf
 import math
 import time
 from std_msgs.msg import String, Float64MultiArray, Float64, Bool
+
 from nav_msgs.msg import Path
 from nav_msgs.srv import GetPlan, GetPlanRequest
 from sensor_msgs.msg import PointCloud2
@@ -76,6 +77,8 @@ def move_left_arm(q1,q2,q3,q4,q5,q6,q7):
 #
 def move_left_gripper(q):
     global pubLaGoalGrip
+    msg = Float64MultiArray()
+    msg.data.append(q)
     pubLaGoalGrip.publish(q)
     time.sleep(1.0)
 
@@ -274,7 +277,7 @@ def main():
             say("I'm looking for " +obj)
             x,y,z=find_object(obj)
             print("Found object at : "+ str([x,y,z]))
-    		
+            say("I've found the object" + obj)
             target_frame="shoulders_left_link" if obj=="pringles" else "shoulders_right_link"
             x,y,z = transform_point(x,y,z,"realsense_link", target_frame)
             print("Coords wrt arm: "+str([x,y,z]))
@@ -283,8 +286,9 @@ def main():
     		
     		
         elif state=="SM_MOVE_ARM":
-            #move_base(-3,0,1)
-            move_base(-2,0,0,1)
+            #
+            move_base(-3,0,1)
+            #move_base(-2,0,0,1)
             if obj=="pringles":
                 #move_left_arm(-0.3,0.2,-0.1,2.1,0.0,0.2,0.0)
     			#move_left_arm(-0.7,0,0,1.9,0.1,0.5,0)
