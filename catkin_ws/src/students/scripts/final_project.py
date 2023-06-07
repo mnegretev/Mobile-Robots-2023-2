@@ -38,7 +38,6 @@ def callback_recognized_speech(msg):
     global recognized_speech, new_task, executing_task
     recognized_speech = msg.hypothesis[0]
     print("New command received: " + recognized_speech)
-    new_task=True
 
 #
 # Global variable 'goal_reached' is set True when the last sent navigation goal is reached
@@ -50,9 +49,8 @@ def callback_goal_reached(msg):
 
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.41,8.47] if "TABLE" in cmd else [1.96, 9.54]
-    place = "table" if "TABLE" in cmd else "kitchen"
-    return obj, loc, place
+    loc = [8.0,8.5] if "TABLE" in cmd else [3.22, 9.72]
+    return obj, loc
 
 #
 # This function sends the goal articular position to the left arm and sleeps 2 seconds
@@ -123,16 +121,15 @@ def move_head(pan, tilt):
 # low-level movements. The mobile base will move at the given linear-angular speeds
 # during a time given by 't'
 #
-def move_base(linear_x,linear_y, angular, t):
+def move_base(linear, angular, t):
     global pubCmdVel
     cmd = Twist()
-    cmd.linear.x = linear_x
-    cmd.linear.y = linear_y
+    cmd.linear.x = linear
     cmd.angular.z = angular
     pubCmdVel.publish(cmd)
     time.sleep(t)
     pubCmdVel.publish(Twist())
-    time.sleep(2.0)
+
 #
 # This function publishes a global goal position. This topic is subscribed by
 # pratice04 and performs path planning and tracking.
@@ -157,13 +154,12 @@ def say(text):
     msg.arg2    = "voice_kal_diphone"
     msg.arg = text
     pubSay.publish(msg)
-    time.sleep(2.0)
+
 #
 # This function calls the service for calculating inverse kinematics for left arm (practice 08)
 # and returns the calculated articular position.
 #
 def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
-    req_ik = InverseKinematicsRequest()
     req_ik.x = x
     req_ik.y = y
     req_ik.z = z
@@ -178,7 +174,7 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
 # This function calls the service for calculating inverse kinematics for right arm (practice 08)
 # and returns the calculated articular position.
 #
-def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
+def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     req_ik = InverseKinematicsRequest()
     req_ik.x = x
     req_ik.y = y
@@ -237,7 +233,8 @@ def main():
     rospy.wait_for_service('/manipulation/la_inverse_kinematics')
     rospy.wait_for_service('/manipulation/ra_inverse_kinematics')
     rospy.wait_for_service('/vision/find_object')
-    print("--------------Services are now available.-----------")
+    print("Services are now available.")
+
 
     #
     # FINAL PROJECT 
