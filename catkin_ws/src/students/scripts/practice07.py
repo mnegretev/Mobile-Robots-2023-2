@@ -102,7 +102,7 @@ def jacobian(q, Ti, Wi):
     qn=numpy.asarray([q,]*len(q))+ delta_q*numpy.identity(len(q))
     qp=numpy.asarray([q,]*len(q))- delta_q*numpy.identity(len(q))
     for i in range(len(q)):
-        J[:,i]=(forward_kinematics(qn[i,:],Ti,Wi)-forward_kinematics(qp[i,:],Ti,Wi))/(2*delta_q)
+        J[:,i]=(forward_kinematics(qn[i,:],Ti,Wi)-forward_kinematics(qp[i,:],Ti,Wi))/delta_q/2
     return J
 
 def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
@@ -158,7 +158,7 @@ def callback_la_ik_for_pose(req):
     global transforms, joints
     Ti = transforms['left']                               
     Wi = [joints['left'][i].axis for i in range(len(joints['left']))]
-    initial_guess = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray).data
+    initial_guess = rospy.wait_for_message("/hardware/left_arm/current_pose", Float64MultiArray).data
     q = inverse_kinematics_xyzrpy(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, Ti, Wi,initial_guess)
     if q is None:
         return None

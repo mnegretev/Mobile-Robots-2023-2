@@ -239,7 +239,7 @@ def main():
     rospy.wait_for_service('/manipulation/la_inverse_kinematics')
     rospy.wait_for_service('/manipulation/ra_inverse_kinematics')
     rospy.wait_for_service('/vision/find_object')
-    print("Services are now available:)")
+    print("-------------Services are now available:)-----------")
 
     #
     # FINAL PROJECT 
@@ -258,22 +258,24 @@ def main():
                 obj,loc=parse_command(recognized_speech)
                 print("New task received. Requested object:"+obj+"Requested loation:"+str(loc))
                 say("Starting")
-                time.sleep(1.0)
+                time.sleep(3.0)
                 state="SM_MOVE_HEAD"
 
         elif state=="SM_MOVE_HEAD":
             print("Moving head")
             say("Moving head")
             move_head(0,-1.0)
-            time.sleep(2.0)
+            time.sleep(3.0)
             state="SM_RECOGNIZE_OBJECT"
 
         elif state=="SM_RECOGNIZE_OBJECT":
             print("Trying to find "+obj)
             say("I am looking for "+obj)
+            time.sleep(2.0)
             x,y,z=find_object(obj)
-            print("Found object at: "+str([x,y,z]))
+            print("Objet found at: "+str([x,y,z]))
             say("I found the " + obj)
+            time.sleep(2.0)
             state="SM_OBJCHOSEN"
 
         elif state=="SM_OBJCHOSEN":
@@ -283,9 +285,11 @@ def main():
                  print("Coords of left arm")
                  say("Preparing to move left arm")
                  time.sleep(2.0)
+                 
              else:
-                 target_frame2="shoulders_right_link"
-                 x,y,z=transform_point(x,y,z,"realsense_link",taget_frame2)
+                 target_frame="shoulders_right_link"
+                 x,y,z=transform_point(x,y,z,"realsense_link",target_frame)
+                 move_base(-8,0,0)
                  print("Coords of right arm")
                  say("Preparing to move right arm")
                  time.sleep(2.0)
@@ -294,10 +298,12 @@ def main():
              state="SM_MOVE_TOTAKE"
 
         elif state=="SM_MOVE_TOTAKE":
+
+    
              move_base(-5,0.3,0)
              if obj=="pringles":
                  move_left_arm(-0.692,0.003,-0.002,2.205,-0.003,-0.046,0.000)
-                 move_left-gripper(0.3)
+                 move_left_gripper(0.3)
              else:
                 move_base(-12,0,0)
                 move_right_arm(0.077,0.092,-0.107,1.1721,-0.311,-0.031,0.101)
@@ -309,12 +315,12 @@ def main():
              print("Calculating inverse kinematics for goal position")
              say("Calculating inverse kinematics")
              if obj=="pringles":
-                    q=calculate_inverse_kinematics_left(x,y,z,-3.140,-1.480,3.141)
+                    q=calculate_inverse_kinematics_left(x+0.1,y,z,0.2,-1.5,0.1)
                     move_left_arm(q[0],q[1],q[2],q[3],q[4],q[5],q[6])
                     move_left_gripper(-0.2)
 
              else:
-                    q=calculate_inverse_kinematics_right(x,y,z,-0.427,-1.225,0.734)
+                    q=calculate_inverse_kinematics_right(x,y,z,0.427,-1.425,0.234)
                     move_right_arm(q[0],q[1],q[2],q[3],q[4],q[5],q[6])
                     move_right_gripper(-0.2)
 
