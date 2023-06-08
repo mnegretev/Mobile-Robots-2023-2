@@ -69,7 +69,7 @@ def forward_kinematics(q, Ti, Wi):
     H= tft.concatenate_matrices(H,Ti[7])
     x,y,z=H[0,3], H[1,3], H[2,3]
     R,P,Y=list (tft.euler_from_matrix(H))
-    return numpy.asarray([x,y,x,R,P,Y])
+    return numpy.asarray([x,y,z,R,P,Y])
     
 
 def jacobian(q, Ti, Wi):
