@@ -108,7 +108,8 @@ def jacobian(q, Ti, Wi):
 def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0,0,0,0,0,0,0]):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])  # Desired configuration
     tolerance = 0.01
-    max_iterations = 30
+    max_iterations = 40
+
     iterations = 0
     #
     # TODO:
@@ -147,12 +148,12 @@ def inverse_kinematics_xyzrpy(x, y, z, roll, pitch, yaw, Ti, Wi,initial_guess=[0
         iterations+=1
 
     if iterations < max_iterations:
-        print("Finished with q=")
-        print(q)
+        print("Finished with "+str(iterations)+"iterations:")
         return q
     else:
         print("Number of iteratons exceeded :(")
         return None
+    return q
 
 def callback_la_ik_for_pose(req):
     global transforms, joints

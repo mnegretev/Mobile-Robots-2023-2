@@ -157,7 +157,7 @@ def say(text):
     msg.arg2    = "voice_kal_diphone"
     msg.arg = text
     pubSay.publish(msg)
-    time.sleep(1.0)
+    time.sleep(2.0)
  
 #
 # This function calls the service for calculating inverse kinematics for left arm (practice 08)
@@ -173,9 +173,9 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     req_ik.yaw   = yaw
     clt = rospy.ServiceProxy("/manipulation/la_inverse_kinematics", InverseKinematics)
     resp = clt(req_ik)
-    print(resp.q1, resp.q2, resp.q3, resp.q4, resp.q5, resp.q6, resp.q7)
+    
     return [resp.q1, resp.q2, resp.q3, resp.q4, resp.q5, resp.q6, resp.q7]
-
+    print(resp.q1, resp.q2, resp.q3, resp.q4, resp.q5, resp.q6, resp.q7)
 #
 # This function calls the service for calculating inverse kinematics for right arm (practice 08)
 # and returns the calculated articular position.
@@ -191,7 +191,7 @@ def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     clt = rospy.ServiceProxy("/manipulation/ra_inverse_kinematics", InverseKinematics)
     resp = clt(req_ik)
     return [resp.q1, resp.q2, resp.q3, resp.q4, resp.q5, resp.q6, resp.q7]
-
+    print(resp.q1, resp.q2, resp.q3, resp.q4, resp.q5, resp.q6, resp.q7)
 #
 # Calls the service for finding object (practice 08) and returns
 # the xyz coordinates of the requested object w.r.t. "realsense_link"
@@ -239,7 +239,7 @@ def main():
     rospy.wait_for_service('/manipulation/la_inverse_kinematics')
     rospy.wait_for_service('/manipulation/ra_inverse_kinematics')
     rospy.wait_for_service('/vision/find_object')
-    print("-------------Services are now available:)-----------")
+    print("###Services are now available:)###")
 
     #
     # FINAL PROJECT 
@@ -279,69 +279,69 @@ def main():
             state="SM_OBJCHOSEN"
 
         elif state=="SM_OBJCHOSEN":
-             if obj=="pringles":
-                 target_frame="shoulders_left_link"
-                 x,y,z=transform_point(x,y,z,"realsense_link",target_frame)
-                 print("Coords of left arm")
-                 say("Preparing to move left arm")
-                 time.sleep(2.0)
+             
+            if obj=="pringles":
+                target_frame="shoulders_left_link"
+                x,y,z=transform_point(x,y,z,"realsense_link",target_frame)
+               
+                say("Preparing to move left arm")
+                time.sleep(2.0)
                  
-             else:
-                 target_frame="shoulders_right_link"
-                 x,y,z=transform_point(x,y,z,"realsense_link",target_frame)
-                 move_base(-8,0,0)
-                 print("Coords of right arm")
-                 say("Preparing to move right arm")
-                 time.sleep(2.0)
+            else:
+                target_frame="shoulders_right_link"
+                x,y,z=transform_point(x,y,z,"realsense_link",target_frame)
+                move_base(-2,0,0)
+                say("Preparing to move right arm")
+                time.sleep(2.0)
 
-             print("Coords wrt arm: "+str([x,y,z]))
-             state="SM_MOVE_TOTAKE"
+            print("Coords wrt arm: "+str([x,y,z]))
+            state="SM_MOVE_TOTAKE"
 
         elif state=="SM_MOVE_TOTAKE":
 
-    
-             move_base(-5,0.3,0)
-             if obj=="pringles":
-                 move_left_arm(-0.692,0.003,-0.002,2.205,-0.003,-0.046,0.000)
-                 move_left_gripper(0.3)
-             else:
-                move_base(-12,0,0)
+            print("----------------------------")
+            move_base(0,0,0)
+            if obj=="pringles":
+                move_left_arm(-0.692,0.003,-0.002,2.205,-0.003,-0.046,0.000)
+                move_left_gripper(0.3)
+            else:
+                move_base(-2,0,0)
                 move_right_arm(0.077,0.092,-0.107,1.1721,-0.311,-0.031,0.101)
                 move_right_gripper(0.3)
             
-             state="ALMOST_TAKE"
+            state="ALMOST_TAKE"
 
         elif state=="ALMOST_TAKE":
-             print("Calculating inverse kinematics for goal position")
-             say("Calculating inverse kinematics")
-             if obj=="pringles":
-                    q=calculate_inverse_kinematics_left(x+0.1,y,z,0.2,-1.5,0.1)
+            print("Calculating inverse kinematics for goal position")
+            say("Calculating inverse kinematics")
+            time.sleep(2)
+            print("Preparing to take the object")
+            say("Preparing to take the object")
+            time.sleep(2.0)
+            if obj=="pringles":
+                    q=calculate_inverse_kinematics_left(x+0.1,y,z,0.5,-1.44,0.67)
                     move_left_arm(q[0],q[1],q[2],q[3],q[4],q[5],q[6])
-                    move_left_gripper(-0.2)
-
-             else:
-                    q=calculate_inverse_kinematics_right(x,y,z,0.427,-1.425,0.234)
+                    move_left_gripper(-0.4)
+                    move_left_arm(q[0],q[1],q[2],q[3]+0.3,q[4],q[5],q[6])
+            else:
+                    q=calculate_inverse_kinematics_right(x+0.12,y,z+0.1,0.032,-1.525,0.2)
                     move_right_arm(q[0],q[1],q[2],q[3],q[4],q[5],q[6])
-                    move_right_gripper(-0.2)
-
-                    print(q)
-                    state="MOVEMENT"
-        elif state=="MOVEMENT":
-             print("Preparing to move")
-             say("Preparing to move")
-             if obj=="pringles":
-                    move_left_arm(q[0],q[1],q[2],q[3],q[4].q[5],q[6])
-             else:
+                    move_right_gripper(-0.4)
                     move_right_arm(-0.4,0,0,3,1,0,0)
-                    move_base(-2,0,0,1)
-                    state="GOING_TO"
+            print("I have the object")
+            move_base(-3,0,1)
+            time.sleep(2)
+            state="GOING_TO"
+
+
         elif state=="GOING_TO":
-                if not goal_reached and not executing_task:
-                    executing_task=True
-                elif goal_reached:
-                    executing_task=False
-                    state="FINISH"
-                    say("I have finished")
+            if not goal_reached and not executing_task:
+                go_to_goal_pose(loc[0], loc[1])
+                executing_task=True
+            elif goal_reached:
+                executing_task=False
+                state="FINISH"
+                say("I have finished")
         elif state=="FINISH":
             if obj=="pringles":
                     move_left_gripper(0.4)
