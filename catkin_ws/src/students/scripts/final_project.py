@@ -325,7 +325,7 @@ def main():
                     move_left_gripper(-0.4)
                    
             else:
-                    q=calculate_inverse_kinematics_right(x,y-0.2,z-0.25,0.0,-1.5,0.0)
+                    q=calculate_inverse_kinematics_right(x,y-0.2,z-0.25,0,-1.5,0.0)
                     move_right_arm(q[0],q[1],q[2],q[3],q[4],q[5],q[6])
                     move_right_gripper(-0.4)
             print("I have the object")
