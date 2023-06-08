@@ -292,11 +292,13 @@ def main():
             move_base(-3,0,1)
             #move_base(-2,0,0,1)
             if obj=="pringles":
+                say("Preparing to move my left arm")
                 #move_left_arm(-0.3,0.2,-0.1,2.1,0.0,0.2,0.0)
     			#move_left_arm(-0.7,0,0,1.9,0.1,0.5,0)
                 move_left_arm(-0.3,0.193,-0.1100,2.1460,0.001,0.1400,0)
                 move_left_gripper(0.4)
             else:
+                say("Preparing to move my right arm")
                 #move_right_arm(-0.3,-0.2,0.1,3.0,0.5,0.0,0.0)
     			#move_right_arm(-0.7,0.3,0.1,1.7,0.6,0.1,0.4)
                 move_right_arm(-0.3,-0.2,-0.03,3.0,0.5,0.0,0.0)
@@ -313,12 +315,12 @@ def main():
                 q=calculate_inverse_kinematics_left(x+0.1,y,z,0.5,-1.44,-0.67)
                 move_left_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
                 move_left_gripper(-0.4)
-                move_left_arm(q[0], q[1], q[2], q[3]+0.3, q[4], q[5], q[6])#prepare for moving
+                move_left_arm(q[0], q[1], q[2], q[3]+0.3, q[4], q[5], q[6])
             else:
                 q=calculate_inverse_kinematics_right(x+0.1,y,z+0.1,-0.032,-1.525,0.2)
                 move_right_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
                 move_right_gripper(-0.4)
-                move_right_arm(-0.4,0,0,3,1,0,0)#prepare
+                move_right_arm(-0.4,0,0,3,1,0,0)
     			
             say("I have taken the "+obj)
             print("OK: "+obj+" taken")
@@ -328,8 +330,8 @@ def main():
     	
         elif state=="SM_MOVE":
             if not goal_reached and not executing_task:
-                print("delivering...")
-                say("delivering")
+                print("deliver")
+                say("NOW I WILL DELIVER TO YOU")
                 go_to_goal_pose(loc[0],loc[1])
                 executing_task= True
             elif goal_reached:
