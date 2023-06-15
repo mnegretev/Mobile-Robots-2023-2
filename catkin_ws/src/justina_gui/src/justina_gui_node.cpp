@@ -27,7 +27,7 @@ int main(int argc, char** argv)
         la_q0 = ros::topic::waitForMessage<std_msgs::Float64MultiArray>
             ("/hardware/left_arm/current_pose", ros::Duration(1.0));
         ra_q0 = ros::topic::waitForMessage<std_msgs::Float64MultiArray>
-        ("/hardware/right_arm/current_pose", ros::Duration(1.0));
+        ("/hardware/left_arm/current_pose", ros::Duration(1.0));
         loop.sleep();
     }
     if(la_q0 == NULL || ra_q0 == NULL)

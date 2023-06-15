@@ -209,7 +209,7 @@ def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
 def find_object(object_name):
     clt_find_object = rospy.ServiceProxy("/vision/find_object", FindObject)
     req_find_object = FindObjectRequest()
-    req_find_object.cloud = rospy.wait_for_message("/hardware/realsense/points", PointCloud2)
+    req_find_object.cloud = rospy.wait_for_message("/camera/depth_registered/points", PointCloud2)
     req_find_object.name  = object_name
     resp = clt_find_object(req_find_object)
     return [resp.x, resp.y, resp.z]
@@ -239,7 +239,7 @@ def main():
     rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
     rospy.Subscriber('/navigation/goal_reached', Bool, callback_goal_reached)
     pubGoalPose = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
-    pubCmdVel   = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+    pubCmdVel   = rospy.Publisher('/hardware/mobile_base/cmd_vel', Twist, queue_size=10)
     pubSay      = rospy.Publisher('/robotsound', SoundRequest, queue_size=10)
     pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose" , Float64MultiArray, queue_size=10);
     pubRaGoalPose = rospy.Publisher("/hardware/right_arm/goal_pose", Float64MultiArray, queue_size=10);
@@ -305,8 +305,10 @@ def main():
             print("Preparing to take " + obj)
             #move_base(1,0,1)
             if obj == "pringles":
-                move_left_arm(-0.7,0.01,0.01,2,0.01,0.6,0.01)
-                move_left_gripper(0.2)
+               # move_base(-0.5, 0, 1)
+               # time.sleep(1.0)
+                move_left_arm(-1.3,0.2,0,1.9,0,1.3,0)
+                move_left_gripper(0.4)
             else:
                 move_base(-0.5,0,1.2)
                 time.sleep(1.0)
@@ -334,13 +336,13 @@ def main():
     #
         elif state == "SM_TRANSFORM":
             if obj == "pringles":
-                x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_left_link")
-                x = x+0.15
+                x,y,z = transform_point(x,y,z, "camera_color_optical_frame", "shoulders_left_link")
+                z = z + 0.05
                 print("Coordinates referenced to left shoulder")
                 say(obj+"coordinates transformed")
                 time.sleep(1.0)
             else:
-                x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_right_link")
+                x,y,z = transform_point(x,y,z, "camera_color_optical_frame", "shoulders_right_link")
                 x = x- 0.05
                 z = z + 0.08
                 print("Coordinates referenced to right shoulder")
@@ -360,8 +362,8 @@ def main():
             if obj == "pringles":
                 q=calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
                 move_left_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
-                time.sleep(1.0)
-                move_left_gripper(-0.4)
+                time.sleep(1.5)
+                move_left_gripper(0.1)
             else:
                 q=calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
                 move_right_arm(q[0], q[1], q[2], q[3]+0.06, q[4]+0.05, q[5]+0.2, q[6])
