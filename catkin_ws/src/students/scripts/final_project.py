@@ -192,12 +192,12 @@ def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
 
 #
 # Calls the service for finding object (practice 08) and returns
-# the xyz coordinates of the requested object w.r.t. "realsense_link"
+# the xyz coordinates of the requested object w.r.t. "camera_color_optical_frame"
 #
 def find_object(object_name):
     clt_find_object = rospy.ServiceProxy("/vision/find_object", FindObject)
     req_find_object = FindObjectRequest()
-    req_find_object.cloud = rospy.wait_for_message("/hardware/realsense/points", PointCloud2)
+    req_find_object.cloud = rospy.wait_for_message("/camera/depth_registered/points", PointCloud2)
     req_find_object.name  = object_name
     resp = clt_find_object(req_find_object)
     return [resp.x, resp.y, resp.z]
@@ -207,7 +207,7 @@ def find_object(object_name):
 #
 def transform_point(x,y,z, source_frame, target_frame):
     listener = tf.TransformListener()
-    listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
+    listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(5.0))
     obj_p = PointStamped()
     obj_p.header.frame_id = source_frame
     obj_p.header.stamp = rospy.Time(0)
@@ -224,7 +224,7 @@ def main():
     rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
     rospy.Subscriber('/navigation/goal_reached', Bool, callback_goal_reached)
     pubGoalPose = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
-    pubCmdVel   = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+    pubCmdVel   = rospy.Publisher('/hardware/mobile_base/cmd_vel', Twist, queue_size=10)
     pubSay      = rospy.Publisher('/robotsound', SoundRequest, queue_size=10)
     pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose" , Float64MultiArray, queue_size=10);
     pubRaGoalPose = rospy.Publisher("/hardware/right_arm/goal_pose", Float64MultiArray, queue_size=10);
@@ -254,17 +254,18 @@ def main():
             
 
         elif state == "SM_WAIT_TASK":
-            if(new_task):
-                obj,loc,place = parse_command(recognized_speech)
-                print("New task received. Requested object: " + obj+ " Requested lcoation: " + str(loc))
-                say("Task received")
-                time.sleep(2.0)
-                state = "SM_MOVE_HEAD"
-
+            # if(new_task):
+            #     obj,loc,place = parse_command(recognized_speech)
+            #     print("New task received. Requested object: " + obj+ " Requested lcoation: " + str(loc))
+            #     say("Task received")
+            #     time.sleep(2.0)
+            #     state = "SM_MOVE_HEAD"
+            obj="pringles"
+            state = "SM_MOVE_HEAD"
         elif state == "SM_MOVE_HEAD":  
             print("Moving head")
             say("Moving head")
-            move_head(0,-1.0)
+            move_head(0,-1)
             time.sleep(2.0)
             state = "SM_RECOGNIZE_OBJ"
 
@@ -280,43 +281,61 @@ def main():
         elif state == "SM_TRANSFORM":
             
             if obj == "pringles":
-                x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_left_link")
+                x,y,z = transform_point(x,y,z, "camera_color_optical_frame", "shoulders_left_link")
                 time.sleep(2.0)
                 print("Coordinates referenced to left shoulder")
                 
             else:
-                x,y,z = transform_point(x,y,z, "realsense_link", "shoulders_right_link")
+                x,y,z = transform_point(x,y,z, "camera_color_optical_frame", "shoulders_right_link")
                 time.sleep(2.0)
                 print("Coordinates referenced to right shoulder")
                 
-            print("Object transfered coordinates at: x - "+ str(x) + ", y - " + str(y) + ", z - " + str(z))
+            print("Object transfered coordinates at: ("+ str(x) + ", " + str(y) + ", " + str(z)+")")
             
             state = "SM_PREPARE_TAKE"
 
         elif state == "SM_PREPARE_TAKE":
             print("Preparing to take " + obj)
-            move_base(-2,0,0,1)
+            #move_base(-0.8,0,0,1)
             if obj == "pringles":
-                move_left_arm(-0.3,0.193,-0.1100,2.1460,0.001,0.1400,0)
-                move_left_gripper(0.4)
+                move_left_arm(-1.27,0.196,-0.003,1.58,-0.003,1.177,-0.003)
+                move_left_gripper(1.2)
             else:
                 move_right_arm(-0.3,-0.2,-0.03,3.0,0.5,0.0,0.0)
-                move_right_gripper(0.4)
+                move_right_gripper(1.2)
             time.sleep(2)
-            move_base(2,0,0,1)
+            #move_base(0.9,0,0,1)
+            
+            state = "SM_PREPARE2_TAKE"
+        elif state == "SM_PREPARE2_TAKE":
+            print("Preparing to take " + obj)
+            #move_base(-0.8,0,0,1)
+            if obj == "pringles":
+                move_left_arm(-0.21,0.196,-0.008,1.86,-0.005,0.373,-0.003)
+                move_left_gripper(1.2)
+            else:
+                move_right_arm(-0.3,-0.2,-0.03,3.0,0.5,0.0,0.0)
+                move_right_gripper(1.2)
+            time.sleep(2)
+            #move_base(0.9,0,0,1)
+            
             state = "SM_TAKE_OBJ"
 
         elif state == "SM_TAKE_OBJ":
             say("taking "+obj)
             print("Taking "+obj)
+            
             if obj == "pringles":
-                q=calculate_inverse_kinematics_left(x+0.1,y,z,0.5,-1.44,-0.67)
+                # 0.4336, -0.0488, -0.3428, 0.5,-1.44,-0.67
+                q=calculate_inverse_kinematics_left(x+0.02,y-0.02,z+0.04,0.5,-1.44,-0.67)
                 move_left_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
-                move_left_gripper(-0.4)
+                
+                time.sleep(2)
+                move_left_gripper(0.2)
             else:
                 q=calculate_inverse_kinematics_right(x+0.12,y,z+0.1,-0.032,-1.525,0.2)
                 move_right_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
-                move_right_gripper(-0.4)
+                move_right_gripper(0.2)
             time.sleep(2)
             print(q)
             state = "SM_PREPARE_MOVE"
@@ -332,8 +351,8 @@ def main():
                 
                 move_right_arm(-0.4,0,0,3,1,0,0)
                 
-            move_base(-2,0,0,1)
-            state = "SM_GO_PLACE"
+            #move_base(-2,0,0,1)
+            state = "SM_FINISH"
         elif state == "SM_GO_PLACE":
             if not goal_reached and  not executing_task:
                 print("Going to the "+place+" in "+str(loc))

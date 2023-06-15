@@ -39,16 +39,16 @@ def segment_by_color(img_bgr, points, obj_name):
     # - Return a tuple of the form: [img_x, img_y, centroid_x, centroid_y, centroid_z]
     #   where img_x, img_y are the center of the object in image coordinates and
     #   centroid_x, y, z are the center of the object in cartesian coordinates. 
-    #
-    color_inf= [25,50,50] if obj_name == 'pringles' else [12,180,140]
-    color_sup= [35,255,255] if obj_name == 'pringles' else [16,220,210]
+    # [1.25,227,164]
+    color_inf= [0,200,140] if obj_name == 'pringles' else [12,180,140]
+    color_sup= [10,255,185] if obj_name == 'pringles' else [16,220,210]
     color_inf = numpy.asarray(color_inf)
     color_sup = numpy.asarray(color_sup)
 
     img_blur=cv2.GaussianBlur(img_bgr,(5,5),0) # suavizado 
     img_hsv = cv2.cvtColor(img_blur,cv2.COLOR_BGR2HSV)  # BGR a HSV
     img_bin = cv2.inRange(img_hsv,color_inf,color_sup) #imagen segmentada
-    
+    cv2.imshow("Color Segmentation", img_bin)
     #eliminacion de outliers con erosion y dilatacion
     kernel = numpy.ones((5, 5), numpy.uint8)
     img_erosion = cv2.erode(img_bin, kernel, iterations=1)
@@ -80,7 +80,7 @@ def callback_find_object(req):
     r,g,b = ((rgb_arr >> 16) & 255), ((rgb_arr >> 8) & 255), (rgb_arr & 255)
     img_bgr = cv2.merge((numpy.asarray(b,dtype='uint8'),numpy.asarray(g,dtype='uint8'),numpy.asarray(r,dtype='uint8')))
     [r, c, x, y, z] = segment_by_color(img_bgr, arr, req.name)
-    hdr = Header(frame_id='realsense_link', stamp=rospy.Time.now())
+    hdr = Header(frame_id='camera_color_optical_frame', stamp=rospy.Time.now())
     pub_point.publish(PointStamped(header=hdr, point=Point(x=x, y=y, z=z)))
     cv2.circle(img_bgr, (int(r), int(c)), 20, [0, 255, 0], thickness=3)
     resp = FindObjectResponse()
