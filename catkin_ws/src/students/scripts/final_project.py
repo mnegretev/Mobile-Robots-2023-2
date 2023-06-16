@@ -50,7 +50,9 @@ def callback_goal_reached(msg):
 
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.41,8.47] if "TABLE" in cmd else [1.96, 9.54]
+    loc = [8.6,1.62] if "TABLE" in cmd else [8.6, 1.62]
+    #loc = [6.62,1.65] if "TABLE" in cmd else [6.62,1.65]
+    
     place = "table" if "TABLE" in cmd else "kitchen"
     return obj, loc, place
 
@@ -254,14 +256,13 @@ def main():
             
 
         elif state == "SM_WAIT_TASK":
-            # if(new_task):
-            #     obj,loc,place = parse_command(recognized_speech)
-            #     print("New task received. Requested object: " + obj+ " Requested lcoation: " + str(loc))
-            #     say("Task received")
-            #     time.sleep(2.0)
-            #     state = "SM_MOVE_HEAD"
-            obj="pringles"
-            state = "SM_MOVE_HEAD"
+            if(new_task):
+                obj,loc,place = parse_command(recognized_speech)
+                print("New task received. Requested object: " + obj+ " Requested lcoation: " + str(loc))
+                say("Task received")
+                time.sleep(2.0)
+                state = "SM_MOVE_HEAD"
+            
         elif state == "SM_MOVE_HEAD":  
             print("Moving head")
             say("Moving head")
@@ -317,7 +318,7 @@ def main():
                 move_right_arm(-0.3,-0.2,-0.03,3.0,0.5,0.0,0.0)
                 move_right_gripper(1.2)
             time.sleep(2)
-            #move_base(0.9,0,0,1)
+            #move_base(0.5,0,0,1)
             
             state = "SM_TAKE_OBJ"
 
@@ -327,7 +328,7 @@ def main():
             
             if obj == "pringles":
                 # 0.4336, -0.0488, -0.3428, 0.5,-1.44,-0.67
-                q=calculate_inverse_kinematics_left(x+0.02,y-0.02,z+0.04,0.5,-1.44,-0.67)
+                q=calculate_inverse_kinematics_left(x,y,z+0.04,0.5,-1.44,-0.67)
                 move_left_arm(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
                 
                 time.sleep(2)
@@ -351,8 +352,21 @@ def main():
                 
                 move_right_arm(-0.4,0,0,3,1,0,0)
                 
-            #move_base(-2,0,0,1)
-            state = "SM_FINISH"
+            move_base(-0.7,0,0,2)
+            state = "SM_PREPARE2_MOVE"
+        elif state == "SM_PREPARE2_MOVE":
+            print("Preparing to take " + obj)
+            say("preparing to go")
+            #move_base(-0.8,0,0,1)
+            if obj == "pringles":
+                move_left_arm(-1.27,0.196,-0.003,1.58,-0.003,1.177,-0.003)
+            else:
+                move_right_arm(-0.3,-0.2,-0.03,3.0,0.5,0.0,0.0)
+
+            time.sleep(2)
+            #move_base(0.9,0,0,1)
+            move_base(-0.7,0,0,2)
+            state = "SM_GO_PLACE"
         elif state == "SM_GO_PLACE":
             if not goal_reached and  not executing_task:
                 print("Going to the "+place+" in "+str(loc))
